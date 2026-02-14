@@ -19,7 +19,7 @@ class Student(models.Model):
     priority3 
     priority4 
     """
-    ID = models.IntegerField()
+    ID = models.IntegerField(primary_key=True)
     agreement1 = models.BooleanField()
     agreement2 = models.BooleanField()
     agreement3 = models.BooleanField()
@@ -33,3 +33,4 @@ class Student(models.Model):
     priority2 = models.IntegerField()
     priority3 = models.IntegerField()
     priority4 = models.IntegerField()
+    date = models.DateField()
