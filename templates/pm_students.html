@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Таблица приёмной комиссии</title>
+    <!-- Подключаем библиотеку html2pdf -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        /* Стили для страницы */
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        /* Стили для таблицы */
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px 0;
+            font-family: Arial, sans-serif;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        th, td {
+            border: 1px solid #333;
+            padding: 10px 12px;
+            text-align: center;
+            vertical-align: middle;
+        }
+        
+        th {
+            background-color: #4CAF50;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .header-main {
+            background-color: #2196F3;
+            font-size: 1.1em;
+        }
+        
+        .header-sub {
+            background-color: #FFC107;
+            color: #333;
+        }
+        
+        .row-label {
+            background-color: #f2f2f2;
+            font-weight: bold;
+            text-align: left;
+        }
+        
+        .group-title {
+            background-color: #e0e0e0;
+            font-weight: bold;
+        }
+        
+        /* Стили для кнопок */
+        .button-container {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-bottom: 20px;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        .btn-success {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+        }
+        
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        /* Стили для заголовка */
+        h2 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        /* Стили для PDF-контейнера */
+        #pdf-content {
+            background-color: white;
+            padding: 20px;
+        }
+        
+        /* Стили для примера данных */
+        .sample-data {
+            background-color: #e8f5e9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        
+        .sample-data p {
+            margin: 5px 0;
+            color: #2e7d32;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Контейнер с кнопками (НЕ входит в PDF) -->
+        <div class="button-container">
+            <!-- Кнопка для перехода к списку студентов -->
+            <a href="/all_students">
+                <button class="btn btn-primary">👥 Перейти к списку студентов</button>
+            </a>
+            <!-- Кнопка для скачивания PDF -->
+            <button class="btn btn-success" onclick="downloadPDF()">📥 Скачать таблицу в PDF</button>
+        </div>
+        
+        <!-- Контейнер для PDF (включает заголовок и таблицу) -->
+        <div id="pdf-content">
+            <h2>📊 Сводная таблица по ПМ</h2>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th rowspan="2">Показатель</th>
+                        <th colspan="4">Направления подготовки</th>
+                    </tr>
+                    <tr>
+                        <th>ПМ</th>
+                        <th>ИВТ</th>
+                        <th>ИТСС</th>
+                        <th>ИБ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Общее кол-во заявлений -->
+                    <tr>
+                        <td class="row-label">Общее кол-во заявлений</td>
+                        <td>156</td>
+                        <td>203</td>
+                        <td>98</td>
+                        <td>145</td>
+                    </tr>
+                    <!-- Количество мест на ОП -->
+                    <tr>
+                        <td class="row-label">Количество мест на ОП</td>
+                        <td>40</td>
+                        <td>50</td>
+                        <td>30</td>
+                        <td>20</td>
+                    </tr>
+                    <!-- Блок заявлений по приоритетам -->
+                    <tr class="group-title">
+                        <td colspan="5">📝 Распределение заявлений по приоритетам</td>
+                    </tr>
+                    <tr>
+                        <td class="row-label">Кол-во заявлений 1-го приоритета</td>
+                        <td>45</td>
+                        <td>60</td>
+                        <td>25</td>
+                        <td>40</td>
+                    </tr>
+                    <tr>
+                        <td class="row-label">Кол-во заявлений 2-го приоритета</td>
+                        <td>40</td>
+                        <td>55</td>
+                        <td>30</td>
+                        <td>35</td>
+                    </tr>
+                    <tr>
+                        <td class="row-label">Кол-во заявлений 3-го приоритета</td>
+                        <td>35</td>
+                        <td>50</td>
+                        <td>25</td>
+                        <td>30</td>
+                    </tr>
+                    <tr>
+                        <td class="row-label">Кол-во заявлений 4-го приоритета</td>
+                        <td>36</td>
+                        <td>38</td>
+                        <td>18</td>
+                        <td>40</td>
+                    </tr>
+                    <!-- Блок зачисленных по приоритетам -->
+                    <tr class="group-title">
+                        <td colspan="5">✅ Распределение зачисленных по приоритетам</td>
+                    </tr>
+                    <tr>
+                        <td class="row-label">Кол-во зачисленных 1-го приоритета</td>
+                        <td>25</td>
+                        <td>30</td>
+                        <td>15</td>
+                        <td>12</td>
+                    </tr>
+                    <tr>
+                        <td class="row-label">Кол-во зачисленных 2-го приоритета</td>
+                        <td>10</td>
+                        <td>12</td>
+                        <td>8</td>
+                        <td>5</td>
+                    </tr>
+                    <tr>
+                        <td class="row-label">Кол-во зачисленных 3-го приоритета</td>
+                        <td>5</td>
+                        <td>8</td>
+                        <td>5</td>
+                        <td>3</td>
+                    </tr>
+                    <tr>
+                        <td class="row-label">Кол-во зачисленных 4-го приоритета</td>
+                        <td>0</td>
+                        <td>0</td>
+                        <td>2</td>
+                        <td>0</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Пример данных (для демонстрации) 
+        <div class="sample-data">
+            <p><strong>📌 Примечание:</strong> В таблицу добавлены примеры данных для демонстрации. Вы можете заменить их на свои.</p>
+            <p>🟢 Всего заявлений: 602</p>
+            <p>🟢 Всего мест: 140</p>
+            <p>🟢 Всего зачислено: 115</p>
+            <p>📌 Дата формирования отчёта: <span id="current-date"></span></p>
+        </div>-->
+    </div>
+
+    <script>
+        // Функция для скачивания таблицы в PDF
+        function downloadPDF() {
+            // Получаем элемент с заголовком и таблицей
+            const element = document.getElementById('pdf-content');
+            
+            // Настройки для PDF
+            const opt = {
+                margin:        [0.5, 0.5, 0.5, 0.5], // отступы: верх, право, низ, лево (в дюймах)
+                filename:     'tablica_priemnoi_komissii.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, letterRendering: true },
+                jsPDF:        { unit: 'in', format: 'a4', orientation: 'landscape' } // альбомная ориентация
+            };
+            
+            // Показываем уведомление о начале загрузки
+            
+            // Скачиваем PDF
+            html2pdf().set(opt).from(element).save();
+        }
+        
+        // Добавляем текущую дату
+        document.getElementById('current-date').textContent = new Date().toLocaleDateString('ru-RU');
+    </script>
+</body>
+</html>
