@@ -5,6 +5,35 @@ from django.utils import timezone
 import json
 from datetime import date
 # Create your views here.
+def index_view(request):
+    return render(request, "index.html")
+
+def pm_students_view(request):
+    students = Student.objects.all().exclude(priority1=0)
+    context = {"students" : students}
+    return render(request, "pm_students.html", context = context)
+
+def vse_spiski_view(request):
+    context=dict()
+    students = Student.objects.all()
+    context["students"] = students
+    priority1_pm = len(students.filter(priority1 = 1))
+    priority1_ivt = len(students.filter(priority2 = 1))
+    priority1_itss = len(students.filter(priority3 = 1))
+    priority1_ib = len(students.filter(priority4 = 1))
+    context['priority1_pm'] = priority1_pm
+    context['priority1_ivt'] = priority1_ivt
+    context['priority1_itss'] = priority1_itss
+    context['priority1_ib'] = priority1_ib
+    k_pm: int = len(students.exclude(priority1 = 0))
+    k_ivt: int = len(students.exclude(priority2 = 0))
+    k_itss: int = len(students.exclude(priority3 = 0))
+    k_ib: int = len(students.exclude(priority4 = 0))
+    context['k_pm'] = k_pm
+    context['k_ivt'] = k_ivt
+    context['k_itss'] = k_itss
+    context['k_ib'] = k_ib
+    return render(request, "vse_spiski.html", context=context)
 
 def test_view(request):
     Student.objects.create(student_id=1,
