@@ -169,8 +169,8 @@
         <!-- Контейнер с кнопками (НЕ входит в PDF) -->
         <div class="button-container">
             <!-- Кнопка для перехода к списку студентов -->
-            <a href="/all_students">
-                <button class="btn btn-primary">👥 Перейти к списку студентов</button>
+            <a href="/">
+                <button class="btn btn-primary">Главная</button>
             </a>
             <!-- Кнопка для скачивания PDF -->
             <button class="btn btn-success" onclick="downloadPDF()">📥 Скачать отчёт в PDF</button>
@@ -220,10 +220,34 @@
                     <!-- Проходной балл за последний день -->
                     <tr>
                         <td class="row-label passing-score">🏆 Проходной балл (на 14.02)</td>
-                        <td class="passing-score">195</td>
-                        <td class="passing-score">178</td>
-                        <td class="passing-score">165</td>
-                        <td class="passing-score">188</td>
+                        <td class="passing-score">
+                            {% if passing_pm == "НЕДОБОР" or passing_pm == 0%}
+                                <span style="color: #f44336;">НЕДОБОР</span>
+                            {% else %}
+                                {{ passing_pm }}
+                            {% endif %}
+                        </td>
+                        <td class="passing-score">
+                            {% if passing_ivt == "НЕДОБОР" or passing_ivt == 0 %}
+                                <span style="color: #f44336;">НЕДОБОР</span>
+                            {% else %}
+                                {{ passing_ivt }}
+                            {% endif %}
+                        </td>
+                        <td class="passing-score">
+                            {% if passing_itss == "НЕДОБОР" or passing_itss == 0 %}
+                                <span style="color: #f44336;">НЕДОБОР</span>
+                            {% else %}
+                                {{ passing_itss }}
+                            {% endif %}
+                        </td>
+                        <td class="passing-score">
+                            {% if passing_ib == "НЕДОБОР" or passing_ib == 0 %}
+                                <span style="color: #f44336;">НЕДОБОР</span>
+                            {% else %}
+                                {{ passing_ib }}
+                            {% endif %}
+                        </td>
                     </tr>
                     <!-- Блок заявлений по приоритетам -->
                     <tr class="group-title">

@@ -150,8 +150,8 @@
         <!-- Контейнер с кнопками (НЕ входит в PDF) -->
         <div class="button-container">
             <!-- Кнопка для перехода к списку студентов (заглушка) -->
-            <a href="#">
-                <button class="btn btn-primary">👥 Перейти к списку студентов</button>
+            <a href="/">
+                <button class="btn btn-primary">Главная</button>
             </a>
             <!-- Кнопка для скачивания PDF -->
             <button class="btn btn-success" onclick="downloadPDF()">📥 Скачать таблицу в PDF</button>
@@ -181,10 +181,10 @@
                         <th>Физика/ИКТ</th>
                         <th>Достижения</th>
                         <!-- Подзаголовки для приоритетов -->
-                        <th>ПМ</th>
-                        <th>ИВТ</th>
-                        <th>ИТСС</th>
-                        <th>ИБ</th>
+                        <th>1</th>
+                        <th>2</th>
+                        <th>3</th>
+                        <th>4</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -218,72 +218,56 @@
                         <td>{{ student.ball_pro }}</td>
                         <td>{{ student.ball_ind }}</td>
                         <!-- Приоритеты: 1 - ПМ, 2 - ИВТ, 3 - ИТСС, 0 - ИБ -->
-                        {% if student.priority1 == 0 %}
-                        <td> </td>
+                        {% if student.priority1 == 1 %}
+                        <td>ПМ</td>
+                        {% elif student.priority2 == 1%}
+                        <td>ИВТ</td>
+                        {% elif student.priority3 == 1%}
+                        <td>ИТСС</td>
+                        {% elif student.priority4 == 1%}
+                        <td>ИБ</td>
                         {% else %}
-                        <td>{{ student.priority1 }}</td>
+                        <td></td>
                         {% endif %}
-                        {% if student.priority2 == 0 %}
-                        <td> </td>
+                        {% if student.priority1 == 2 %}
+                        <td>ПМ</td>
+                        {% elif student.priority2 == 2%}
+                        <td>ИВТ</td>
+                        {% elif student.priority3 == 2%}
+                        <td>ИТСС</td>
+                        {% elif student.priority4 == 2%}
+                        <td>ИБ</td>
                         {% else %}
-                        <td>{{ student.priority2 }}</td>
+                        <td></td>
                         {% endif %}
-                        {% if student.priority3 == 0 %}
-                        <td> </td>
+                        {% if student.priority1 == 3 %}
+                        <td>ПМ</td>
+                        {% elif student.priority2 == 3%}
+                        <td>ИВТ</td>
+                        {% elif student.priority3 == 3%}
+                        <td>ИТСС</td>
+                        {% elif student.priority4 == 3%}
+                        <td>ИБ</td>
                         {% else %}
-                        <td>{{ student.priority3 }}</td>
+                        <td></td>
                         {% endif %}
-                        {% if student.priority4 == 0 %}
-                        <td> </td>
+                        {% if student.priority1 == 4 %}
+                        <td>ПМ</td>
+                        {% elif student.priority2 == 4%}
+                        <td>ИВТ</td>
+                        {% elif student.priority3 == 4%}
+                        <td>ИТСС</td>
+                        {% elif student.priority4 == 4%}
+                        <td>ИБ</td>
                         {% else %}
-                        <td>{{ student.priority4 }}</td>
+                        <td></td>
                         {% endif %}
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
             
-            <!-- Блок с дополнительной статистикой (в стиле оригинального примера) -->
-            <div style="margin-top: 30px;">
-                <table style="width: 60%; margin: 0 auto;">
-                    <thead>
-                        <tr>
-                            <th>Показатель</th>
-                            <th>ПМ</th>
-                            <th>ИВТ</th>
-                            <th>ИТСС</th>
-                            <th>ИБ</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td class="row-label">Общее кол-во заявлений</td>
-                            <td>{{k_pm}}</td>
-                            <td>{{k_ivt}}</td>
-                            <td>{{k_itss}}</td>
-                            <td>{{k_ib}}</td>
-                        </tr>
-                        <tr>
-                            <td class="row-label">Количество мест на ОП</td>
-                            <td>40</td>
-                            <td>50</td>
-                            <td>30</td>
-                            <td>20</td>
-                        </tr>
-                        <tr class="group-title">
-                            <td colspan="5">📝 Распределение заявлений по приоритетам (1-й приоритет)</td>
-                        </tr>
-                        <tr>
-                            <td class="row-label">Кол-во заявлений 1-го приоритета</td>
-                            <td>{{ priority1_pm }}</td>
-                            <td>{{ priority1_ivt }}</td>
-                            <td>{{ priority1_itss }}</td>
-                            <td>{{ priority1_ib }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
+            
         
         <!-- Пояснение к данным -->
         

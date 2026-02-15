@@ -1,12 +1,78 @@
 from django.shortcuts import render
 from django.http.request import HttpRequest
-from .models import Student
+from .models import Student, Student1dayago, Student2dayago, Student3dayago
 from django.utils import timezone
 import json
 from datetime import date
 from django.db.models import Count, Q, Max
 from datetime import date, timedelta
 # Create your views here.
+
+def get_enrolled_students_by_priority():
+    """
+    Возвращает словарь с зачисленными студентами по каждому направлению,
+    учитывая только наивысший приоритет, по которому студент проходит
+    """
+    # Все студенты с хотя бы одним согласием
+    all_students = Student.objects.filter(
+        Q(agreement1=True) | Q(agreement2=True) | 
+        Q(agreement3=True) | Q(agreement4=True)
+    )
+    
+    # Количество мест по направлениям
+    places = {1: 40, 2: 50, 3: 30, 4: 20}
+    
+    # Словари для хранения зачисленных по каждому направлению
+    enrolled_by_direction = {1: [], 2: [], 3: [], 4: []}
+    
+    # Сначала собираем всех студентов с их наивысшим приоритетом
+    students_with_top_priority = []
+    
+    for student in all_students:
+        # Определяем наивысший приоритет, по которому есть согласие
+        top_priority = None
+        if student.agreement1 and student.priority1 > 0:
+            top_priority = student.priority1
+        elif student.agreement2 and student.priority2 > 0:
+            top_priority = student.priority2
+        elif student.agreement3 and student.priority3 > 0:
+            top_priority = student.priority3
+        elif student.agreement4 and student.priority4 > 0:
+            top_priority = student.priority4
+        
+        if top_priority:
+            students_with_top_priority.append({
+                'student': student,
+                'direction': top_priority,
+                'ball_sum': student.ball_sum,
+                'priority_level': 1 if student.agreement1 and student.priority1 == top_priority else
+                                2 if student.agreement2 and student.priority2 == top_priority else
+                                3 if student.agreement3 and student.priority3 == top_priority else 4
+            })
+    
+    # Сортируем всех студентов по баллам (от высшего к низшему)
+    students_with_top_priority.sort(key=lambda x: x['ball_sum'], reverse=True)
+    
+    # Распределяем по направлениям с учётом лимитов мест
+    for student_data in students_with_top_priority:
+        direction = student_data['direction']
+        student = student_data['student']
+        
+        # Если ещё есть места на этом направлении
+        if len(enrolled_by_direction[direction]) < places.get(direction, 0):
+            enrolled_by_direction[direction].append({
+                'student': student,
+                'ball_sum': student.ball_sum,
+                'priority': student_data['priority_level']
+            })
+    
+    # Сортируем зачисленных по баллам (для каждого направления)
+    for direction in enrolled_by_direction:
+        enrolled_by_direction[direction].sort(key=lambda x: x['ball_sum'], reverse=True)
+    
+    return enrolled_by_direction
+
+
 def index_view(request):
     return render(request, "index.html")
 
@@ -16,7 +82,14 @@ def pm_students_view(request):
     return render(request, "pm_students.html", context = context)
 
 def vse_spiski_view(request):
+    num_op = {
+        1:"ПМ",
+        2:"ИВТ",
+        3:"ИТСС",
+        4:"ИБ",
+    }
     context=dict()
+    context['num_op'] = num_op
     students = Student.objects.all()
     context["students"] = students
     priority1_pm = len(students.filter(priority1 = 1))
@@ -180,7 +253,7 @@ def all_students_report(request):
             Q(priority3=dir_code) | Q(priority4=dir_code)
         ).count()
     
-    # 2. Количество заявлений по приоритетам
+    # 2. Количество заявлений по приоритетам (ВСЕ поданные заявления)
     priority_stats = {}
     for dir_code in DIRECTIONS.keys():
         priority_stats[dir_code] = {
@@ -190,60 +263,91 @@ def all_students_report(request):
             'priority4': students.filter(priority4=dir_code).count(),
         }
     
-    # 3. Зачисленные студенты по приоритетам
+    # 3. Зачисленные студенты по приоритетам (с учётом только высшего приоритета)
+    enrolled_by_direction = get_enrolled_students_by_priority()
+
+    # Инициализируем статистику по приоритетам для каждого направления
     enrolled_stats = {}
     for dir_code in DIRECTIONS.keys():
         enrolled_stats[dir_code] = {
-            'priority1': students.filter(
-                priority1=dir_code, 
-                **{f'agreement{1}': True}
-            ).count(),
-            'priority2': students.filter(
-                priority2=dir_code,
-                **{f'agreement{2}': True}
-            ).count(),
-            'priority3': students.filter(
-                priority3=dir_code,
-                **{f'agreement{3}': True}
-            ).count(),
-            'priority4': students.filter(
-                priority4=dir_code,
-                **{f'agreement{4}': True}
-            ).count(),
+            'priority1': 0,
+            'priority2': 0,
+            'priority3': 0,
+            'priority4': 0,
         }
+
+    # Подсчитываем зачисленных по каждому приоритету
+    for direction, students in enrolled_by_direction.items():
+        for student in students:
+            # Определяем, по какому приоритету студент зачислен
+            if student.priority1 == direction and student.agreement1:
+                enrolled_stats[direction]['priority1'] += 1
+            elif student.priority2 == direction and student.agreement2:
+                enrolled_stats[direction]['priority2'] += 1
+            elif student.priority3 == direction and student.agreement3:
+                enrolled_stats[direction]['priority3'] += 1
+            elif student.priority4 == direction and student.agreement4:
+                enrolled_stats[direction]['priority4'] += 1
     
     # 4. Динамика проходного балла за последние 4 дня
     dynamics_data = {}
     end_date = date.today()
     start_date = end_date - timedelta(days=3)
-    
+    places = {1: 40, 2: 50, 3: 30, 4: 20}
+
     for dir_code in DIRECTIONS.keys():
         dir_dynamics = []
+        
         for i in range(4):
             current_date = start_date + timedelta(days=i)
             
-            # Получаем всех абитуриентов с согласием на это направление до текущей даты
-            candidates = Student.objects.filter(
-                Q(priority1=dir_code, agreement1=True) |
-                Q(priority2=dir_code, agreement2=True) |
-                Q(priority3=dir_code, agreement3=True) |
-                Q(priority4=dir_code, agreement4=True),
+            # Получаем всех студентов с согласием на эту дату
+            students_on_date = Student.objects.filter(
+                Q(agreement1=True) | Q(agreement2=True) | 
+                Q(agreement3=True) | Q(agreement4=True),
                 date__lte=current_date
-            ).order_by('-ball_sum')
+            )
             
-            # Количество мест (можно вынести в отдельную модель)
-            places = {
-                1: 40,  # ПМ
-                2: 50,  # ИВТ
-                3: 30,  # ИТСС
-                4: 20,  # ИБ
-            }
+            # Определяем зачисленных на эту дату (аналогично основной логике)
+            temp_enrolled = {1: [], 2: [], 3: [], 4: []}
+            temp_students = []
             
-            # Проходной балл - балл последнего зачисленного
-            if candidates.count() >= places.get(dir_code, 0):
-                passing_score = candidates[places.get(dir_code, 0) - 1].ball_sum
-            elif candidates.count() > 0:
-                passing_score = candidates.last().ball_sum
+            for student in students_on_date:
+                top_priority = None
+                if student.agreement1 and student.priority1 > 0:
+                    top_priority = student.priority1
+                elif student.agreement2 and student.priority2 > 0:
+                    top_priority = student.priority2
+                elif student.agreement3 and student.priority3 > 0:
+                    top_priority = student.priority3
+                elif student.agreement4 and student.priority4 > 0:
+                    top_priority = student.priority4
+                
+                if top_priority:
+                    temp_students.append({
+                        'student': student,
+                        'direction': top_priority,
+                        'ball_sum': student.ball_sum
+                    })
+            
+            # Сортируем и распределяем
+            temp_students.sort(key=lambda x: x['ball_sum'], reverse=True)
+            for s_data in temp_students:
+                dir_code_temp = s_data['direction']
+                if len(temp_enrolled[dir_code_temp]) < places.get(dir_code_temp, 0):
+                    temp_enrolled[dir_code_temp].append(s_data['student'])
+            
+            # Берём зачисленных на конкретное направление
+            enrolled_on_date = temp_enrolled.get(dir_code, [])
+            enrolled_on_date_sorted = sorted(enrolled_on_date, key=lambda x: x.ball_sum, reverse=True)
+            
+            total_places = places.get(dir_code, 0)
+            
+            # Определяем проходной балл на эту дату
+            if len(enrolled_on_date_sorted) >= total_places:
+                passing_score = enrolled_on_date_sorted[total_places - 1].ball_sum
+            elif len(enrolled_on_date_sorted) > 0:
+                passing_score = enrolled_on_date_sorted[-1].ball_sum
             else:
                 passing_score = 0
                 
@@ -251,24 +355,23 @@ def all_students_report(request):
         
         dynamics_data[dir_code] = dir_dynamics
     
-    # 5. Проходные баллы на сегодня
+        # 5. Проходные баллы на сегодня с учётом реального зачисления
     today_passing = {}
     for dir_code in DIRECTIONS.keys():
-        candidates = Student.objects.filter(
-            Q(priority1=dir_code, agreement1=True) |
-            Q(priority2=dir_code, agreement2=True) |
-            Q(priority3=dir_code, agreement3=True) |
-            Q(priority4=dir_code, agreement4=True)
-        ).order_by('-ball_sum')
+        # Берём зачисленных студентов на это направление
+        enrolled_students = enrolled_by_direction.get(dir_code, [])
+        enrolled_students_sorted = sorted(enrolled_students, key=lambda x: x.ball_sum, reverse=True)
         
         places = {1: 40, 2: 50, 3: 30, 4: 20}
+        total_places = places.get(dir_code, 0)
         
-        if candidates.count() >= places.get(dir_code, 0):
-            today_passing[dir_code] = candidates[places.get(dir_code, 0) - 1].ball_sum
-        elif candidates.count() > 0:
-            today_passing[dir_code] = candidates.last().ball_sum
+        # Проверяем, хватает ли абитуриентов
+        if len(enrolled_students_sorted) >= total_places:
+            # Есть конкурс - показываем проходной балл (балл последнего зачисленного)
+            today_passing[dir_code] = enrolled_students_sorted[total_places - 1].ball_sum
         else:
-            today_passing[dir_code] = 0
+            # Недобор
+            today_passing[dir_code] = "НЕДОБОР"
     
     # Подготавливаем данные для шаблона
     context = {
@@ -285,10 +388,10 @@ def all_students_report(request):
         'places_ib': 20,
         
         # Проходные баллы на сегодня
-        'passing_pm': today_passing.get(1, 0),
-        'passing_ivt': today_passing.get(2, 0),
-        'passing_itss': today_passing.get(3, 0),
-        'passing_ib': today_passing.get(4, 0),
+        'passing_pm': today_passing.get(1, "НЕДОБОР"),
+        'passing_ivt': today_passing.get(2, "НЕДОБОР"),
+        'passing_itss': today_passing.get(3, "НЕДОБОР"),
+        'passing_ib': today_passing.get(4, "НЕДОБОР"),
         
         # Заявления по приоритетам
         'priority1_pm': priority1_pm,
