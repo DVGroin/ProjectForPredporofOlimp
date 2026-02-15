@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Конкурсные списки - ПМ</title>
+    <title>Конкурсные списки - ИБ</title>
     <!-- Подключаем библиотеку html2pdf -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <!-- Подключаем Font Awesome для иконок -->
@@ -43,7 +43,7 @@
         }
         
         .stats-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
             color: white;
             padding: 15px 25px;
             border-radius: 10px;
@@ -101,7 +101,7 @@
         
         .filter-group select:focus, .filter-group input:focus {
             outline: none;
-            border-color: #4CAF50;
+            border-color: #f44336;
         }
         
         .filter-actions {
@@ -128,7 +128,7 @@
         }
         
         th {
-            background-color: #4CAF50;
+            background-color: #f44336;
             color: white;
             font-weight: bold;
             padding: 15px 10px;
@@ -143,7 +143,7 @@
         }
         
         th.sortable:hover {
-            background-color: #45a049;
+            background-color: #d32f2f;
         }
         
         th i {
@@ -188,7 +188,7 @@
             line-height: 24px;
             text-align: center;
             border-radius: 50%;
-            background-color: #2196F3;
+            background-color: #f44336;
             color: white;
             font-weight: bold;
             font-size: 12px;
@@ -197,7 +197,7 @@
         .priority-1 { background-color: #4CAF50; }
         .priority-2 { background-color: #2196F3; }
         .priority-3 { background-color: #FF9800; }
-        .priority-4 { background-color: #9C27B0; }
+        .priority-4 { background-color: #f44336; }
         
         /* Стили для кнопок */
         .button-container {
@@ -255,6 +255,11 @@
             color: white;
         }
         
+        .btn-danger {
+            background: linear-gradient(45deg, #f44336, #d32f2f);
+            color: white;
+        }
+        
         /* Пагинация */
         .pagination {
             display: flex;
@@ -274,15 +279,15 @@
         }
         
         .pagination button:hover {
-            background-color: #4CAF50;
+            background-color: #f44336;
             color: white;
-            border-color: #4CAF50;
+            border-color: #f44336;
         }
         
         .pagination button.active {
-            background-color: #4CAF50;
+            background-color: #f44336;
             color: white;
-            border-color: #4CAF50;
+            border-color: #f44336;
         }
         
         .pagination button:disabled {
@@ -351,7 +356,7 @@
         
         <!-- Контейнер для PDF -->
         <div id="pdf-content">
-            <h2><i class="fas fa-graduation-cap"></i> Конкурсные списки по направлению ПМ</h2>
+            <h2><i class="fas fa-shield-alt"></i> Конкурсные списки по направлению ИБ</h2>
             
             <!-- Статистика -->
             <div class="header-info">
@@ -359,7 +364,7 @@
                     <i class="fas fa-users"></i> Всего заявлений: <span id="total-applications">{{ students.count }}</span>
                 </div>
                 <div class="stats-card">
-                    <i class="fas fa-chair"></i> Бюджетных мест: <span>40</span>
+                    <i class="fas fa-chair"></i> Бюджетных мест: <span>20</span>
                 </div>
                 <div class="stats-card">
                     <i class="fas fa-check-circle"></i> Зачислено: <span id="total-enrolled">0</span>
@@ -428,7 +433,7 @@
                                 Сумма баллов <i class="fas fa-sort" id="sort-sum"></i>
                             </th>
                             <th>Баллы (проф/рус/мат/инд)</th>
-                            <th>Приоритет для ПМ</th>
+                            <th>Приоритет для ИБ</th>
                             <th>Статус согласия</th>
                             <th>Статус зачисления</th>
                             <th>Дата подачи</th>
@@ -438,26 +443,32 @@
                         {% for student in students %}
                         <tr data-student-id="{{ student.student_id }}" 
                             data-ball-sum="{{ student.ball_sum }}"
-                            data-priority="{{ student.priority1 }}"
-                            data-agreement="{{ student.agreement1|lower }}">
+                            data-priority="{{ student.priority4 }}"
+                            data-agreement="{{ student.agreement4|lower }}">
                             <td>{{ student.student_id }}</td>
                             <td><strong>{{ student.ball_sum }}</strong></td>
                             <td>{{ student.ball_pro }} / {{ student.ball_rus }} / {{ student.ball_mat }} / {{ student.ball_ind }}</td>
                             <td>
-                                {% if student.priority1 > 0 %}
-                                <span class="priority-badge priority-{{ student.priority1 }}">{{ student.priority1 }}</span>
+                                {% if student.priority4 > 0 %}
+                                <span class="priority-badge priority-{{ student.priority4 }}">{{ student.priority4 }}</span>
                                 {% else %}
                                 <span class="priority-badge">-</span>
                                 {% endif %}
                             </td>
                             <td>
-                                {% if student.agreement1 %}
+                                {% if student.agreement4 %}
                                 <span style="color: #4CAF50; font-weight: bold;">✅ Согласен</span>
                                 {% else %}
                                 <span style="color: #f44336; font-weight: bold;">❌ Не согласен</span>
                                 {% endif %}
                             </td>
-                            <td class="enrollment-status">{% include "pm_enrollment_status.html" %}</td>
+                            <td class="enrollment-status">
+                                {% if student.agreement4 %}
+                                    <span class="status-not-enrolled">НЕ ЗАЧИСЛЕН</span>
+                                {% else %}
+                                    <span class="status-not-enrolled">НЕТ СОГЛАСИЯ</span>
+                                {% endif %}
+                            </td>
                             <td>{{ student.date|date:"d.m.Y" }}</td>
                         </tr>
                         {% empty %}
@@ -524,8 +535,8 @@
                 .filter(s => s.agreement)
                 .sort((a, b) => b.ball_sum - a.ball_sum);
             
-            // Первые 40 зачислены
-            const enrolledIds = new Set(eligibleStudents.slice(0, 40).map(s => s.id));
+            // Первые 20 зачислены (для ИБ)
+            const enrolledIds = new Set(eligibleStudents.slice(0, 20).map(s => s.id));
             
             // Обновляем статус в таблице
             students.forEach(student => {
@@ -722,7 +733,7 @@
             
             const opt = {
                 margin:        [0.3, 0.3, 0.3, 0.3],
-                filename:     'konkursnye_spiski_pm.pdf',
+                filename:     'konkursnye_spiski_ib.pdf',
                 image:        { type: 'jpeg', quality: 0.95 },
                 html2canvas:  { scale: 1.5, letterRendering: true },
                 jsPDF:        { unit: 'in', format: 'a4', orientation: 'landscape' }

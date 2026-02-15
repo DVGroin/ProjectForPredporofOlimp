@@ -63,7 +63,8 @@ def get_enrolled_students_by_priority():
             enrolled_by_direction[direction].append({
                 'student': student,
                 'ball_sum': student.ball_sum,
-                'priority': student_data['priority_level']
+                'priority': student_data['priority_level'],
+                'student_id': student.student_id
             })
     
     # Сортируем зачисленных по баллам (для каждого направления)
@@ -78,8 +79,23 @@ def index_view(request):
 
 def pm_students_view(request):
     students = Student.objects.all().exclude(priority1=0)
-    context = {"students" : students}
-    return render(request, "pm_students.html", context = context)
+    context = {"students": students}
+    return render(request, "pm_students.html", context=context)
+
+def ivt_students_view(request):
+    students = Student.objects.all().exclude(priority2=0)
+    context = {"students": students}
+    return render(request, "ivt_students.html", context=context)
+
+def itss_students_view(request):
+    students = Student.objects.all().exclude(priority3=0)
+    context = {"students": students}
+    return render(request, "itss_students.html", context=context)
+
+def ib_students_view(request):
+    students = Student.objects.all().exclude(priority4=0)
+    context = {"students": students}
+    return render(request, "ib_students.html", context=context)
 
 def vse_spiski_view(request):
     num_op = {
@@ -277,8 +293,9 @@ def all_students_report(request):
         }
 
     # Подсчитываем зачисленных по каждому приоритету
-    for direction, students in enrolled_by_direction.items():
-        for student in students:
+    for direction, students_list in enrolled_by_direction.items():
+        for student_data in students_list:
+            student = student_data['student']
             # Определяем, по какому приоритету студент зачислен
             if student.priority1 == direction and student.agreement1:
                 enrolled_stats[direction]['priority1'] += 1
@@ -355,12 +372,12 @@ def all_students_report(request):
         
         dynamics_data[dir_code] = dir_dynamics
     
-        # 5. Проходные баллы на сегодня с учётом реального зачисления
+    # 5. Проходные баллы на сегодня с учётом реального зачисления
     today_passing = {}
     for dir_code in DIRECTIONS.keys():
         # Берём зачисленных студентов на это направление
         enrolled_students = enrolled_by_direction.get(dir_code, [])
-        enrolled_students_sorted = sorted(enrolled_students, key=lambda x: x.ball_sum, reverse=True)
+        enrolled_students_sorted = sorted(enrolled_students, key=lambda x: x['ball_sum'], reverse=True)
         
         places = {1: 40, 2: 50, 3: 30, 4: 20}
         total_places = places.get(dir_code, 0)
@@ -368,10 +385,26 @@ def all_students_report(request):
         # Проверяем, хватает ли абитуриентов
         if len(enrolled_students_sorted) >= total_places:
             # Есть конкурс - показываем проходной балл (балл последнего зачисленного)
-            today_passing[dir_code] = enrolled_students_sorted[total_places - 1].ball_sum
+            today_passing[dir_code] = enrolled_students_sorted[total_places - 1]['ball_sum']
         else:
             # Недобор
             today_passing[dir_code] = "НЕДОБОР"
+    
+    # 6. Формируем списки зачисленных абитуриентов по каждому направлению
+    enrolled_lists = {}
+    for dir_code in DIRECTIONS.keys():
+        # Получаем зачисленных студентов для этого направления
+        enrolled_students = enrolled_by_direction.get(dir_code, [])
+        
+        # Формируем список словарей с ID и баллами (уже отсортировано)
+        enrolled_lists[dir_code] = [
+            {
+                'id': student_data['student'].student_id,
+                'ball_sum': student_data['ball_sum'],
+                'priority': student_data['priority']
+            }
+            for student_data in enrolled_students
+        ]
     
     # Подготавливаем данные для шаблона
     context = {
@@ -448,6 +481,18 @@ def all_students_report(request):
             (date.today() - timedelta(days=1)).strftime('%d.%m'),
             date.today().strftime('%d.%m'),
         ]),
+        
+        # Списки зачисленных абитуриентов
+        'enrolled_pm': enrolled_lists.get(1, []),
+        'enrolled_ivt': enrolled_lists.get(2, []),
+        'enrolled_itss': enrolled_lists.get(3, []),
+        'enrolled_ib': enrolled_lists.get(4, []),
+        
+        # Количество зачисленных (для заголовков)
+        'enrolled_pm_count': len(enrolled_lists.get(1, [])),
+        'enrolled_ivt_count': len(enrolled_lists.get(2, [])),
+        'enrolled_itss_count': len(enrolled_lists.get(3, [])),
+        'enrolled_ib_count': len(enrolled_lists.get(4, [])),
     }
     
     return render(request, 'all_students.html', context)

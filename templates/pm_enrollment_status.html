@@ -1,0 +1,8 @@
+{% load static %}
+{% with students=students %}
+    {% for student in students %}
+        {% if forloop.parentloop.counter0 == forloop.counter0 %}
+            <span class="status-not-enrolled">НЕТ СОГЛАСИЯ</span>
+        {% endif %}
+    {% endfor %}
+{% endwith %}

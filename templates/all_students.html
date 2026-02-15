@@ -162,6 +162,89 @@
             height: auto !important;
             max-height: 180px;
         }
+
+        /* Стили для списков зачисленных */
+        .shortage-text {
+            color: #f44336;
+            font-weight: bold;
+        }
+        
+        .enrolled-list-container {
+            margin-top: 30px;
+            page-break-inside: avoid;
+        }
+        
+        .enrolled-item {
+            margin-bottom: 25px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .enrolled-title {
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        
+        .enrolled-title.pm { color: #4CAF50; }
+        .enrolled-title.ivt { color: #2196F3; }
+        .enrolled-title.itss { color: #FF9800; }
+        .enrolled-title.ib { color: #f44336; }
+        
+        .table-container {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .enrolled-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        
+        .enrolled-table th {
+            padding: 8px;
+            border: 1px solid;
+            position: sticky;
+            top: 0;
+            color: white;
+        }
+        
+        .enrolled-table th.pm { background-color: #4CAF50; border-color: #4CAF50; }
+        .enrolled-table th.ivt { background-color: #2196F3; border-color: #2196F3; }
+        .enrolled-table th.itss { background-color: #FF9800; border-color: #FF9800; }
+        .enrolled-table th.ib { background-color: #f44336; border-color: #f44336; }
+        
+        .enrolled-table td {
+            padding: 6px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+        
+        .enrolled-table tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        
+        .empty-message {
+            padding: 15px;
+            text-align: center;
+            color: #999;
+            border: 1px solid #ddd;
+        }
+        
+        .summary-stats {
+            margin-top: 20px;
+            padding: 12px;
+            background-color: #e8f5e8;
+            border-radius: 5px;
+            font-size: 14px;
+            text-align: center;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -180,7 +263,7 @@
         <div id="pdf-content">
             <!-- Шапка отчёта с датой и временем -->
             <div class="report-header">
-                <h1>📊 Сводный отчёт приёмной комиссии по ОП ДАТА И ВРЕМЯ</h1>
+                <h1>📊 Сводный отчёт приёмной комиссии по ОП</h1>
                 <div class="report-date" id="report-datetime">
                     <!-- Дата и время подставятся через JavaScript -->
                 </div>
@@ -204,10 +287,10 @@
                     <!-- Общее кол-во заявлений -->
                     <tr>
                         <td class="row-label">Общее кол-во заявлений</td>
-                        <td>{{total_pm}}</td>
-                        <td>{{total_ivt}}</td>
-                        <td>{{total_itss}}</td>
-                        <td>{{total_ib}}</td>
+                        <td>{{ total_pm }}</td>
+                        <td>{{ total_ivt }}</td>
+                        <td>{{ total_itss }}</td>
+                        <td>{{ total_ib }}</td>
                     </tr>
                     <!-- Количество мест на ОП -->
                     <tr>
@@ -219,31 +302,31 @@
                     </tr>
                     <!-- Проходной балл за последний день -->
                     <tr>
-                        <td class="row-label passing-score">🏆 Проходной балл (на 14.02)</td>
+                        <td class="row-label passing-score">🏆 Проходной балл (на {{ chart_dates.3 }})</td>
                         <td class="passing-score">
-                            {% if passing_pm == "НЕДОБОР" or passing_pm == 0%}
-                                <span style="color: #f44336;">НЕДОБОР</span>
+                            {% if passing_pm == "НЕДОБОР" or passing_pm == 0 %}
+                                <span class="shortage-text">НЕДОБОР</span>
                             {% else %}
                                 {{ passing_pm }}
                             {% endif %}
                         </td>
                         <td class="passing-score">
                             {% if passing_ivt == "НЕДОБОР" or passing_ivt == 0 %}
-                                <span style="color: #f44336;">НЕДОБОР</span>
+                                <span class="shortage-text">НЕДОБОР</span>
                             {% else %}
                                 {{ passing_ivt }}
                             {% endif %}
                         </td>
                         <td class="passing-score">
                             {% if passing_itss == "НЕДОБОР" or passing_itss == 0 %}
-                                <span style="color: #f44336;">НЕДОБОР</span>
+                                <span class="shortage-text">НЕДОБОР</span>
                             {% else %}
                                 {{ passing_itss }}
                             {% endif %}
                         </td>
                         <td class="passing-score">
                             {% if passing_ib == "НЕДОБОР" or passing_ib == 0 %}
-                                <span style="color: #f44336;">НЕДОБОР</span>
+                                <span class="shortage-text">НЕДОБОР</span>
                             {% else %}
                                 {{ passing_ib }}
                             {% endif %}
@@ -255,31 +338,31 @@
                     </tr>
                     <tr>
                         <td class="row-label">Кол-во заявлений 1-го приоритета</td>
-                        <td>{{priority1_pm}}</td>
-                        <td>{{priority1_ivt}}</td>
-                        <td>{{priority1_itss}}</td>
-                        <td>{{priority1_ib}}</td>
+                        <td>{{ priority1_pm }}</td>
+                        <td>{{ priority1_ivt }}</td>
+                        <td>{{ priority1_itss }}</td>
+                        <td>{{ priority1_ib }}</td>
                     </tr>
                     <tr>
                         <td class="row-label">Кол-во заявлений 2-го приоритета</td>
-                        <td>{{priority2_pm}}</td>
-                        <td>{{priority2_ivt}}</td>
-                        <td>{{priority2_itss}}</td>
-                        <td>{{priority2_ib}}</td>
+                        <td>{{ priority2_pm }}</td>
+                        <td>{{ priority2_ivt }}</td>
+                        <td>{{ priority2_itss }}</td>
+                        <td>{{ priority2_ib }}</td>
                     </tr>
                     <tr>
                         <td class="row-label">Кол-во заявлений 3-го приоритета</td>
-                        <td>{{priority3_pm}}</td>
-                        <td>{{priority3_ivt}}</td>
-                        <td>{{priority3_itss}}</td>
-                        <td>{{priority3_ib}}</td>
+                        <td>{{ priority3_pm }}</td>
+                        <td>{{ priority3_ivt }}</td>
+                        <td>{{ priority3_itss }}</td>
+                        <td>{{ priority3_ib }}</td>
                     </tr>
                     <tr>
                         <td class="row-label">Кол-во заявлений 4-го приоритета</td>
-                        <td>{{priority4_pm}}</td>
-                        <td>{{priority4_ivt}}</td>
-                        <td>{{priority4_itss}}</td>
-                        <td>{{priority4_ib}}</td>
+                        <td>{{ priority4_pm }}</td>
+                        <td>{{ priority4_ivt }}</td>
+                        <td>{{ priority4_itss }}</td>
+                        <td>{{ priority4_ib }}</td>
                     </tr>
                     <!-- Блок зачисленных по приоритетам -->
                     <tr class="group-title">
@@ -319,7 +402,7 @@
             <!-- Блок с графиками динамики проходного балла -->
             <h3 style="text-align: center; margin: 20px 0 10px; font-size: 18px;">📈 Динамика проходного балла за 4 дня</h3>
             
-            <!-- Контейнер для графиков (все на одной странице) -->
+            <!-- Контейнер для графиков -->
             <div class="charts-container">
                 <div class="chart-box">
                     <h3>ПМ</h3>
@@ -336,6 +419,136 @@
                 <div class="chart-box">
                     <h3>ИБ</h3>
                     <canvas id="chart-ib"></canvas>
+                </div>
+            </div>
+
+            <!-- Блок со списками зачисленных абитуриентов -->
+            <div class="enrolled-list-container">
+                <h3 style="text-align: center; margin: 20px 0 15px; font-size: 18px; color: #333;">
+                    📋 Списки абитуриентов, рекомендованных к зачислению
+                </h3>
+                
+                <!-- ПМ -->
+                <div class="enrolled-item">
+                    <h4 class="enrolled-title pm">ПМ ({{ enrolled_pm_count }} из 40 чел.)</h4>
+                    <div class="table-container">
+                        <table class="enrolled-table">
+                            <thead>
+                                <tr>
+                                    <th class="pm">№</th>
+                                    <th class="pm">ID абитуриента</th>
+                                    <th class="pm">Сумма баллов</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for student in enrolled_pm %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>{{ student.id }}</td>
+                                    <td>{{ student.ball_sum }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="empty-message">Нет зачисленных абитуриентов</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- ИВТ -->
+                <div class="enrolled-item">
+                    <h4 class="enrolled-title ivt">ИВТ ({{ enrolled_ivt_count }} из 50 чел.)</h4>
+                    <div class="table-container">
+                        <table class="enrolled-table">
+                            <thead>
+                                <tr>
+                                    <th class="ivt">№</th>
+                                    <th class="ivt">ID абитуриента</th>
+                                    <th class="ivt">Сумма баллов</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for student in enrolled_ivt %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>{{ student.id }}</td>
+                                    <td>{{ student.ball_sum }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="empty-message">Нет зачисленных абитуриентов</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- ИТСС -->
+                <div class="enrolled-item">
+                    <h4 class="enrolled-title itss">ИТСС ({{ enrolled_itss_count }} из 30 чел.)</h4>
+                    <div class="table-container">
+                        <table class="enrolled-table">
+                            <thead>
+                                <tr>
+                                    <th class="itss">№</th>
+                                    <th class="itss">ID абитуриента</th>
+                                    <th class="itss">Сумма баллов</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for student in enrolled_itss %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>{{ student.id }}</td>
+                                    <td>{{ student.ball_sum }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="empty-message">Нет зачисленных абитуриентов</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- ИБ -->
+                <div class="enrolled-item">
+                    <h4 class="enrolled-title ib">ИБ ({{ enrolled_ib_count }} из 20 чел.)</h4>
+                    <div class="table-container">
+                        <table class="enrolled-table">
+                            <thead>
+                                <tr>
+                                    <th class="ib">№</th>
+                                    <th class="ib">ID абитуриента</th>
+                                    <th class="ib">Сумма баллов</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for student in enrolled_ib %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>{{ student.id }}</td>
+                                    <td>{{ student.ball_sum }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="empty-message">Нет зачисленных абитуриентов</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Общая статистика -->
+                <div class="summary-stats">
+                    <strong>Всего зачислено:</strong> 
+                    {{ enrolled_pm_count|add:enrolled_ivt_count|add:enrolled_itss_count|add:enrolled_ib_count }} из 140 человек
+                    ({% widthratio enrolled_pm_count|add:enrolled_ivt_count|add:enrolled_itss_count|add:enrolled_ib_count 140 100 %}% от общего количества мест)
                 </div>
             </div>
         </div>
@@ -368,273 +581,51 @@
         }
 
         // Функция для генерации данных динамики за 4 дня
-function generateDynamicsData() {
-    // Получаем даты из Django (уже в правильном формате)
-    let dates;
-    try {
-        dates = '{{ chart_dates|safe }}';
-        // Если dates строка, парсим её
-        if (typeof dates === 'string') {
-            dates = JSON.parse(dates);
+        function generateDynamicsData() {
+            // Получаем даты из Django
+            let dates = {{ chart_dates|safe }};
+            
+            // Получаем данные динамики из Django
+            let pmData = {{ dynamics_pm|safe }};
+            let ivtData = {{ dynamics_ivt|safe }};
+            let itssData = {{ dynamics_itss|safe }};
+            let ibData = {{ dynamics_ib|safe }};
+            
+            // Данные для каждого направления
+            const data = {
+                pm: pmData,
+                ivt: ivtData,
+                itss: itssData,
+                ib: ibData
+            };
+            
+            return { dates, data };
         }
-    } catch (e) {
-        // Если что-то пошло не так, используем даты по умолчанию
-        console.error('Error parsing dates:', e);
-        dates = [];
-        const today = moment(reportCreationTime);
-        for (let i = 3; i >= 0; i--) {
-            dates.push(today.clone().subtract(i, 'days').format('DD.MM'));
-        }
-    }
-    
-    // Получаем данные динамики из Django
-    let pmData, ivtData, itssData, ibData;
-    try {
-        pmData = '{{ dynamics_pm|safe }}';
-        ivtData = '{{ dynamics_ivt|safe }}';
-        itssData = '{{ dynamics_itss|safe }}';
-        ibData = '{{ dynamics_ib|safe }}';
-        
-        // Парсим если это строки
-        if (typeof pmData === 'string') pmData = JSON.parse(pmData);
-        if (typeof ivtData === 'string') ivtData = JSON.parse(ivtData);
-        if (typeof itssData === 'string') itssData = JSON.parse(itssData);
-        if (typeof ibData === 'string') ibData = JSON.parse(ibData);
-    } catch (e) {
-        console.error('Error parsing dynamics data:', e);
-        // Данные по умолчанию, если не удалось получить из Django
-        /*pmData = [185, 192, 188, 195];
-        ivtData = [170, 175, 182, 178];
-        itssData = [155, 160, 158, 165];
-        ibData = [190, 185, 193, 188];*/
-    }
-    
-    // Убеждаемся, что у нас есть данные
-    if (!dates || dates.length === 0) {
-        const today = moment(reportCreationTime);
-        for (let i = 3; i >= 0; i--) {
-            dates.push(today.clone().subtract(i, 'days').format('DD.MM'));
-        }
-    }
-    
-    // Данные для каждого направления
-    const data = {
-        pm: pmData,
-        ivt: ivtData,
-        itss: itssData,
-        ib: ibData
-    };
-    
-    console.log('Dates:', dates); // Для отладки
-    console.log('Data:', data);   // Для отладки
-    
-    return { dates, data };
-}
 
-// Обновлённая функция создания графиков с лучшей обработкой осей
-function createCharts() {
-    const { dates, data } = generateDynamicsData();
-    
-    // Проверяем, что данные корректны
-    if (!dates || !data || !Array.isArray(dates) || dates.length === 0) {
-        console.error('Invalid chart data');
-        return;
-    }
-    
-    // Настройки для графиков (оптимизированные для PDF)
-    const chartConfig = {
-        type: 'line',
-        options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            layout: {
-                padding: {
-                    top: 10,
-                    bottom: 10,
-                    left: 5,
-                    right: 5
-                }
-            },
-            plugins: {
-                legend: {
-                    display: false
-                },
-                tooltip: {
-                    enabled: true,
-                    mode: 'index',
-                    intersect: false
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: false,
-                    min: 140,
-                    max: 210,
-                    grid: {
-                        display: true,
-                        color: 'rgba(0,0,0,0.1)'
-                    },
-                    title: {
-                        display: false
-                    },
-                    ticks: {
-                        font: {
-                            size: 9
-                        },
-                        stepSize: 10,
-                        callback: function(value) {
-                            return value;
-                        }
-                    }
-                },
-                x: {
-                    type: 'category',
-                    grid: {
-                        display: false
-                    },
-                    ticks: {
-                        font: {
-                            size: 9
-                        },
-                        maxRotation: 30,
-                        minRotation: 30,
-                        autoSkip: true,
-                        maxTicksLimit: 4
-                    },
-                    title: {
-                        display: true,
-                        text: 'Дата',
-                        font: {
-                            size: 8
-                        }
-                    }
-                }
-            },
-            elements: {
-                line: {
-                    borderWidth: 2,
-                    fill: false
-                },
-                point: {
-                    radius: 3,
-                    hoverRadius: 4,
-                    borderWidth: 1
-                }
-            },
-            animation: {
-                duration: 0 // Отключаем анимацию для PDF
-            },
-            hover: {
-                mode: 'nearest',
-                intersect: true
-            }
-        }
-    };
-    
-    // Уничтожаем старые графики, если они существуют
-    Object.values(charts).forEach(chart => {
-        if (chart) {
-            try {
-                chart.destroy();
-            } catch (e) {
-                console.error('Error destroying chart:', e);
-            }
-        }
-    });
-    
-    // Очищаем объект charts
-    charts = {};
-    
-    // Вспомогательная функция для создания графика с проверкой данных
-    function createChartIfDataExists(elementId, label, dataArray, color) {
-        const canvas = document.getElementById(elementId);
-        if (!canvas) {
-            console.error(`Canvas element ${elementId} not found`);
-            return null;
-        }
-        
-        // Проверяем, что данные - массив и имеют правильную длину
-        let chartData = dataArray;
-        if (!Array.isArray(chartData) || chartData.length === 0) {
-            console.warn(`Invalid data for ${elementId}, using defaults`);
-            chartData = [150, 160, 170, 180]; // Запасные данные
-        }
-        
-        // Если длина массива не 4, корректируем
-        if (chartData.length !== 4) {
-            console.warn(`Data length for ${elementId} is ${chartData.length}, adjusting`);
-            const paddedData = [...chartData];
-            while (paddedData.length < 4) paddedData.push(paddedData[paddedData.length - 1] || 150);
-            chartData = paddedData.slice(0, 4);
-        }
-        
-        try {
-            return new Chart(canvas, {
-                ...chartConfig,
-                data: {
-                    labels: dates,
-                    datasets: [{
-                        label: label,
-                        data: chartData,
-                        borderColor: color,
-                        backgroundColor: color.replace(')', ', 0.1)').replace('rgb', 'rgba'),
-                        borderWidth: 2,
-                        tension: 0.2,
-                        pointBackgroundColor: color,
-                        pointBorderColor: '#fff',
-                        pointBorderWidth: 1,
-                        pointRadius: 3,
-                        pointHoverRadius: 5
-                    }]
-                }
-            });
-        } catch (e) {
-            console.error(`Error creating chart for ${elementId}:`, e);
-            return null;
-        }
-    }
-    
-    // Создаём графики с проверкой
-    charts.pm = createChartIfDataExists('chart-pm', 'ПМ', data.pm, '#4CAF50');
-    charts.ivt = createChartIfDataExists('chart-ivt', 'ИВТ', data.ivt, '#2196F3');
-    charts.itss = createChartIfDataExists('chart-itss', 'ИТСС', data.itss, '#FF9800');
-    charts.ib = createChartIfDataExists('chart-ib', 'ИБ', data.ib, '#f44336');
-    
-    console.log('Charts created:', charts); // Для отладки
-}
-
-// Добавим функцию для принудительного обновления графиков
-function refreshCharts() {
-    // Небольшая задержка, чтобы убедиться, что DOM полностью загружен
-    setTimeout(() => {
-        createCharts();
-    }, 100);
-}
-
-// Обновляем инициализацию
-document.addEventListener('DOMContentLoaded', function() {
-    // Отображаем фиксированную дату и время создания
-    displayReportDateTime();
-    
-    // Создаём графики с небольшой задержкой
-    refreshCharts();
-    
-    // Добавляем обработчик изменения размера окна для перерисовки графиков
-    window.addEventListener('resize', function() {
-        refreshCharts();
-    });
-});
-
-        // Функция для создания/обновления графиков
+        // Функция создания графиков
         function createCharts() {
             const { dates, data } = generateDynamicsData();
             
-            // Настройки для графиков (оптимизированные для PDF)
+            // Проверяем, что данные корректны
+            if (!dates || !data || !Array.isArray(dates) || dates.length === 0) {
+                console.error('Invalid chart data');
+                return;
+            }
+            
+            // Настройки для графиков
             const chartConfig = {
                 type: 'line',
                 options: {
                     responsive: true,
                     maintainAspectRatio: true,
+                    layout: {
+                        padding: {
+                            top: 10,
+                            bottom: 10,
+                            left: 5,
+                            right: 5
+                        }
+                    },
                     plugins: {
                         legend: {
                             display: false
@@ -647,15 +638,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     },
                     scales: {
                         y: {
-                            beginAtZero: false,
-                            min: 140,
-                            max: 210,
+                            beginAtZero: true,
                             grid: {
                                 display: true,
                                 color: 'rgba(0,0,0,0.1)'
-                            },
-                            title: {
-                                display: false
                             },
                             ticks: {
                                 font: {
@@ -664,21 +650,23 @@ document.addEventListener('DOMContentLoaded', function() {
                             }
                         },
                         x: {
+                            type: 'category',
                             grid: {
                                 display: false
                             },
                             ticks: {
                                 font: {
-                                    size: 8
+                                    size: 9
                                 },
-                                maxRotation: 45,
-                                minRotation: 45
+                                maxRotation: 30,
+                                minRotation: 30
                             }
                         }
                     },
                     elements: {
                         line: {
-                            borderWidth: 2
+                            borderWidth: 2,
+                            fill: false
                         },
                         point: {
                             radius: 3,
@@ -686,102 +674,121 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     },
                     animation: {
-                        duration: 0 // Отключаем анимацию для PDF
+                        duration: 0
                     }
                 }
             };
             
-            // Уничтожаем старые графики, если они существуют
+            // Уничтожаем старые графики
             Object.values(charts).forEach(chart => {
-                if (chart) chart.destroy();
+                if (chart) {
+                    try {
+                        chart.destroy();
+                    } catch (e) {
+                        console.error('Error destroying chart:', e);
+                    }
+                }
             });
+            
+            charts = {};
             
             // Создаём график для ПМ
-            charts.pm = new Chart(document.getElementById('chart-pm'), {
-                ...chartConfig,
-                data: {
-                    labels: dates,
-                    datasets: [{
-                        label: 'ПМ',
-                        data: data.pm,
-                        borderColor: '#4CAF50',
-                        backgroundColor: 'rgba(76, 175, 80, 0.1)',
-                        borderWidth: 2,
-                        tension: 0.2,
-                        pointBackgroundColor: '#4CAF50',
-                        pointBorderColor: '#fff',
-                        pointBorderWidth: 1,
-                        pointRadius: 3
-                    }]
-                }
-            });
+            const ctxPm = document.getElementById('chart-pm')?.getContext('2d');
+            if (ctxPm) {
+                charts.pm = new Chart(ctxPm, {
+                    ...chartConfig,
+                    data: {
+                        labels: dates,
+                        datasets: [{
+                            label: 'ПМ',
+                            data: data.pm,
+                            borderColor: '#4CAF50',
+                            backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.2,
+                            pointBackgroundColor: '#4CAF50',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 1,
+                            pointRadius: 3
+                        }]
+                    }
+                });
+            }
             
             // Создаём график для ИВТ
-            charts.ivt = new Chart(document.getElementById('chart-ivt'), {
-                ...chartConfig,
-                data: {
-                    labels: dates,
-                    datasets: [{
-                        label: 'ИВТ',
-                        data: data.ivt,
-                        borderColor: '#2196F3',
-                        backgroundColor: 'rgba(33, 150, 243, 0.1)',
-                        borderWidth: 2,
-                        tension: 0.2,
-                        pointBackgroundColor: '#2196F3',
-                        pointBorderColor: '#fff',
-                        pointBorderWidth: 1,
-                        pointRadius: 3
-                    }]
-                }
-            });
+            const ctxIvt = document.getElementById('chart-ivt')?.getContext('2d');
+            if (ctxIvt) {
+                charts.ivt = new Chart(ctxIvt, {
+                    ...chartConfig,
+                    data: {
+                        labels: dates,
+                        datasets: [{
+                            label: 'ИВТ',
+                            data: data.ivt,
+                            borderColor: '#2196F3',
+                            backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.2,
+                            pointBackgroundColor: '#2196F3',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 1,
+                            pointRadius: 3
+                        }]
+                    }
+                });
+            }
             
             // Создаём график для ИТСС
-            charts.itss = new Chart(document.getElementById('chart-itss'), {
-                ...chartConfig,
-                data: {
-                    labels: dates,
-                    datasets: [{
-                        label: 'ИТСС',
-                        data: data.itss,
-                        borderColor: '#FF9800',
-                        backgroundColor: 'rgba(255, 152, 0, 0.1)',
-                        borderWidth: 2,
-                        tension: 0.2,
-                        pointBackgroundColor: '#FF9800',
-                        pointBorderColor: '#fff',
-                        pointBorderWidth: 1,
-                        pointRadius: 3
-                    }]
-                }
-            });
+            const ctxItss = document.getElementById('chart-itss')?.getContext('2d');
+            if (ctxItss) {
+                charts.itss = new Chart(ctxItss, {
+                    ...chartConfig,
+                    data: {
+                        labels: dates,
+                        datasets: [{
+                            label: 'ИТСС',
+                            data: data.itss,
+                            borderColor: '#FF9800',
+                            backgroundColor: 'rgba(255, 152, 0, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.2,
+                            pointBackgroundColor: '#FF9800',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 1,
+                            pointRadius: 3
+                        }]
+                    }
+                });
+            }
             
             // Создаём график для ИБ
-            charts.ib = new Chart(document.getElementById('chart-ib'), {
-                ...chartConfig,
-                data: {
-                    labels: dates,
-                    datasets: [{
-                        label: 'ИБ',
-                        data: data.ib,
-                        borderColor: '#f44336',
-                        backgroundColor: 'rgba(244, 67, 54, 0.1)',
-                        borderWidth: 2,
-                        tension: 0.2,
-                        pointBackgroundColor: '#f44336',
-                        pointBorderColor: '#fff',
-                        pointBorderWidth: 1,
-                        pointRadius: 3
-                    }]
-                }
-            });
+            const ctxIb = document.getElementById('chart-ib')?.getContext('2d');
+            if (ctxIb) {
+                charts.ib = new Chart(ctxIb, {
+                    ...chartConfig,
+                    data: {
+                        labels: dates,
+                        datasets: [{
+                            label: 'ИБ',
+                            data: data.ib,
+                            borderColor: '#f44336',
+                            backgroundColor: 'rgba(244, 67, 54, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.2,
+                            pointBackgroundColor: '#f44336',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 1,
+                            pointRadius: 3
+                        }]
+                    }
+                });
+            }
         }
 
         // Функция для скачивания отчёта в PDF
         function downloadPDF() {
             const element = document.getElementById('pdf-content');
             
-            // Настройки для PDF (оптимизированные для одной страницы)
             const opt = {
                 margin:        [0.3, 0.3, 0.3, 0.3],
                 filename:     'svodny_otchet_po_op.pdf',
@@ -796,7 +803,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     format: 'a4', 
                     orientation: 'landscape' 
                 },
-                pagebreak: { mode: 'avoid-all' } // Запрещаем разрывы страниц
+                pagebreak: { mode: 'avoid-all' }
             };
             
             html2pdf().set(opt).from(element).save();
@@ -804,11 +811,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Инициализация при загрузке страницы
         document.addEventListener('DOMContentLoaded', function() {
-            // Отображаем фиксированную дату и время создания
             displayReportDateTime();
-            
-            // Создаём графики
-            createCharts();
+            setTimeout(() => {
+                createCharts();
+            }, 100);
         });
     </script>
 </body>
