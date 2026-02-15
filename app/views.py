@@ -1,12 +1,474 @@
 from django.shortcuts import render
 from django.http.request import HttpRequest
-from .models import Student, Student1dayago, Student2dayago, Student3dayago
+from .models import Student, Student1dayago, Student2dayago, Student3dayago, DynBal
 from django.utils import timezone
 import json
-from datetime import date
+from datetime import date, datetime
 from django.db.models import Count, Q, Max
 from datetime import date, timedelta
+from django.http import JsonResponse, HttpResponse
+from django.views.decorators.csrf import csrf_exempt
+import csv
+import os
+from django.db import transaction
+import logging
+import traceback
 # Create your views here.
+
+logger = logging.getLogger(__name__)
+
+def get_enrolled_for_date(target_date):
+    """
+    Возвращает словарь {direction: [студенты]} для даты target_date
+    с учётом наивысшего приоритета и ограничений по местам.
+    Каждый элемент списка содержит 'student', 'ball_sum', 'priority_level'.
+    """
+    places = {1: 40, 2: 50, 3: 30, 4: 20}
+    enrolled_by_direction = {1: [], 2: [], 3: [], 4: []}
+
+    # Все студенты с согласием на указанную дату или ранее
+    all_students = Student.objects.filter(
+        Q(agreement1=True) | Q(agreement2=True) | Q(agreement3=True) | Q(agreement4=True),
+        date__lte=target_date
+    )
+
+    students_with_top_priority = []
+    for student in all_students:
+        top_priority = None
+        priority_level = 0
+        if student.agreement1 and student.priority1 > 0:
+            top_priority = student.priority1
+            priority_level = 1
+        elif student.agreement2 and student.priority2 > 0:
+            top_priority = student.priority2
+            priority_level = 2
+        elif student.agreement3 and student.priority3 > 0:
+            top_priority = student.priority3
+            priority_level = 3
+        elif student.agreement4 and student.priority4 > 0:
+            top_priority = student.priority4
+            priority_level = 4
+
+        if top_priority:
+            students_with_top_priority.append({
+                'student': student,
+                'direction': top_priority,
+                'ball_sum': student.ball_sum,
+                'priority_level': priority_level
+            })
+
+    # Сортировка по убыванию баллов
+    students_with_top_priority.sort(key=lambda x: x['ball_sum'], reverse=True)
+
+    # Распределение по направлениям
+    for s in students_with_top_priority:
+        d = s['direction']
+        if len(enrolled_by_direction[d]) < places.get(d, 0):
+            enrolled_by_direction[d].append(s)
+
+    return enrolled_by_direction
+
+def update_passing_scores(target_date):
+    """
+    Рассчитывает проходные баллы для всех направлений на target_date
+    и сохраняет их в таблицу DynBal.
+    """
+    places = {1: 40, 2: 50, 3: 30, 4: 20}
+    enrolled = get_enrolled_for_date(target_date)
+
+    for direction, students in enrolled.items():
+        passing = None
+        if len(students) >= places[direction]:
+            # Проходной балл – балл последнего зачисленного (индекс places-1)
+            passing = students[places[direction] - 1]['ball_sum']
+
+        DynBal.objects.update_or_create(
+            direction=direction,
+            date=target_date,
+            defaults={'passing_score': passing}
+        )
+
+def view_students_direct(request):
+    """Прямой просмотр студентов в БД"""
+    students = Student.objects.all()#.order_by('-ball_sum')
+    
+    html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Просмотр БД</title>
+        <style>
+            body {{ font-family: Arial; margin: 20px; }}
+            table {{ border-collapse: collapse; width: 100%; }}
+            th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
+            th {{ background-color: #4CAF50; color: white; }}
+            tr:nth-child(even) {{ background-color: #f2f2f2; }}
+        </style>
+    </head>
+    <body>
+        <h1>Студенты в базе данных (таблица: {Student._meta.db_table})</h1>
+        <p>Всего записей: {students.count()}</p>
+        <table>
+            <tr>
+                <th>ID</th>
+                <th>Сумма баллов</th>
+                <th>Приоритет 1</th>
+                <th>Приоритет 2</th>
+                <th>Приоритет 3</th>
+                <th>Приоритет 4</th>
+                <th>Согласие 1</th>
+                <th>Согласие 2</th>
+                <th>Согласие 3</th>
+                <th>Согласие 4</th>
+                <th>Дата</th>
+            </tr>
+    """
+    
+    for s in students:
+        html += f"""
+            <tr>
+                <td>{s.student_id}</td>
+                <td><strong>{s.ball_sum}</strong></td>
+                <td>{s.priority1}</td>
+                <td>{s.priority2}</td>
+                <td>{s.priority3}</td>
+                <td>{s.priority4}</td>
+                <td>{'✅' if s.agreement1 else '❌'}</td>
+                <td>{'✅' if s.agreement2 else '❌'}</td>
+                <td>{'✅' if s.agreement3 else '❌'}</td>
+                <td>{'✅' if s.agreement4 else '❌'}</td>
+                <td>{s.date}</td>
+            </tr>
+        """
+    
+    html += """
+        </table>
+    </body>
+    </html>
+    """
+    
+    return HttpResponse(html)
+
+def debug_students(request):
+    """
+    Временная функция для отладки - показывает всех студентов в БД
+    """
+    students = Student.objects.all().values('student_id', 'ball_sum', 'priority1', 'priority2', 'priority3', 'priority4')
+    return JsonResponse({'students': list(students), 'count': students.count()})
+
+@csrf_exempt
+def upload_students(request):
+    """
+    Загрузка и обработка CSV файла со списком абитуриентов
+    Формат файла: DD.MM_НАПРАВЛЕНИЕ.csv (например: 01.08_ИБ.csv)
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Метод не поддерживается'}, status=405)
+    
+    # Для отладки - полная информация о запросе
+    debug_info = {
+        'request_method': request.method,
+        'files_keys': list(request.FILES.keys()) if request.FILES else [],
+        'has_file': 'file' in request.FILES,
+    }
+    
+    try:
+        # Получаем файл из запроса
+        uploaded_file = request.FILES.get('file')
+        if not uploaded_file:
+            return JsonResponse({
+                'error': 'Файл не найден',
+                'debug': debug_info
+            }, status=400)
+        
+        debug_info['filename'] = uploaded_file.name
+        debug_info['file_size'] = uploaded_file.size
+        debug_info['content_type'] = uploaded_file.content_type
+        
+        # Проверяем расширение файла
+        if not uploaded_file.name.endswith('.csv'):
+            return JsonResponse({
+                'error': 'Файл должен быть в формате CSV',
+                'debug': debug_info
+            }, status=400)
+        
+        # Парсим имя файла для получения даты и направления
+        filename = uploaded_file.name
+        try:
+            # Ожидаемый формат: DD.MM_НАПРАВЛЕНИЕ.csv
+            file_part = filename.replace('.csv', '')
+            date_part, direction = file_part.split('_')
+            day, month = map(int, date_part.split('.'))
+            
+            # Определяем год (текущий)
+            current_year = datetime.now().year
+            file_date = datetime(current_year, month, day).date()
+            print(file_date)
+            debug_info['direction'] = direction
+            debug_info['file_date'] = str(file_date)
+            
+        except Exception as e:
+            return JsonResponse({
+                'error': 'Неверный формат имени файла. Ожидается: DD.MM_НАПРАВЛЕНИЕ.csv',
+                'details': str(e),
+                'debug': debug_info
+            }, status=400)
+        
+        # Определяем соответствие направления и полей в БД
+        direction_mapping = {
+            'ПМ': {'priority_field': 'priority1', 'agreement_field': 'agreement1', 'priority_value': 1},
+            'ИВТ': {'priority_field': 'priority2', 'agreement_field': 'agreement2', 'priority_value': 2},
+            'ИТСС': {'priority_field': 'priority3', 'agreement_field': 'agreement3', 'priority_value': 3},
+            'ИБ': {'priority_field': 'priority4', 'agreement_field': 'agreement4', 'priority_value': 4},
+        }
+        
+        if direction not in direction_mapping:
+            return JsonResponse({
+                'error': f'Неизвестное направление: {direction}. Допустимые: ПМ, ИВТ, ИТСС, ИБ',
+                'debug': debug_info
+            }, status=400)
+        
+        priority_info = direction_mapping[direction]
+        
+        # Читаем CSV файл
+        try:
+            # Читаем файл как байты и декодируем
+            file_content = uploaded_file.read()
+            
+            # Пробуем разные кодировки
+            decoded_content = None
+            encodings = ['utf-8-sig', 'windows-1251', 'utf-8', 'cp1251']
+            
+            for encoding in encodings:
+                try:
+                    decoded_content = file_content.decode(encoding)
+                    debug_info['encoding_used'] = encoding
+                    break
+                except UnicodeDecodeError:
+                    continue
+            
+            if decoded_content is None:
+                return JsonResponse({
+                    'error': 'Не удалось прочитать файл ни в одной из кодировок',
+                    'debug': debug_info
+                }, status=400)
+            
+            # Разбиваем на строки
+            lines = decoded_content.splitlines()
+            debug_info['lines_count'] = len(lines)
+            
+            if len(lines) < 2:
+                return JsonResponse({
+                    'error': 'Файл слишком короткий',
+                    'debug': debug_info
+                }, status=400)
+            
+            # Создаем DictReader
+            reader = csv.DictReader(lines)
+            fieldnames = reader.fieldnames
+            debug_info['fieldnames'] = fieldnames
+            
+            if not fieldnames:
+                return JsonResponse({
+                    'error': 'CSV файл не содержит заголовков',
+                    'debug': debug_info
+                }, status=400)
+            
+        except Exception as e:
+            return JsonResponse({
+                'error': f'Ошибка чтения CSV файла: {str(e)}',
+                'debug': debug_info
+            }, status=400)
+        
+        # Проверяем подключение к БД
+        try:
+            # Пробуем создать тестовую запись
+            test_before = Student.objects.count()
+            debug_info['db_count_before'] = test_before
+            debug_info['db_table'] = Student._meta.db_table
+        except Exception as e:
+            return JsonResponse({
+                'error': f'Ошибка подключения к БД: {str(e)}',
+                'debug': debug_info
+            }, status=500)
+        
+        students_processed = 0
+        students_created = 0
+        students_updated = 0
+        errors = []
+        saved_ids = []
+        
+        # Обрабатываем каждую строку в транзакции
+        with transaction.atomic():
+            for row_num, row in enumerate(reader, start=2):
+                try:
+                    # Проверяем наличие всех необходимых колонок
+                    required_fields = ['ID', 'Согласие', 'Приоритет', 'Балл Физика/ИКТ', 
+                                      'Балл Русский язык', 'Балл Математика', 
+                                      'Балл за индивидуальные достижения', 'Сумма баллов']
+                    
+                    for field in required_fields:
+                        if field not in row:
+                            raise KeyError(f"Отсутствует колонка '{field}'. Доступные колонки: {list(row.keys())}")
+                    
+                    # Извлекаем данные из строки CSV
+                    student_id = int(row['ID'].strip())
+                    
+                    # Преобразуем согласие (Да/Нет) в boolean
+                    agreement_text = row['Согласие'].strip().upper()
+                    agreement = agreement_text == 'ДА'
+                    
+                    # Баллы - обрабатываем случай, если поле пустое
+                    ball_pro = int(float(row['Балл Физика/ИКТ'].strip())) if row['Балл Физика/ИКТ'].strip() else 0
+                    ball_rus = int(float(row['Балл Русский язык'].strip())) if row['Балл Русский язык'].strip() else 0
+                    ball_mat = int(float(row['Балл Математика'].strip())) if row['Балл Математика'].strip() else 0
+                    ball_ind = int(float(row['Балл за индивидуальные достижения'].strip())) if row['Балл за индивидуальные достижения'].strip() else 0
+                    ball_sum = int(float(row['Сумма баллов'].strip())) if row['Сумма баллов'].strip() else 0
+                    
+                    # Проверяем, существует ли студент
+                    student, created = Student.objects.update_or_create(
+                        student_id=student_id,
+                        defaults={
+                            'ball_pro': ball_pro,
+                            'ball_rus': ball_rus,
+                            'ball_mat': ball_mat,
+                            'ball_ind': ball_ind,
+                            'ball_sum': ball_sum,
+                            'date': file_date,
+                        }
+                    )
+                    
+                    # Обновляем поля в зависимости от направления
+                    if priority_info['priority_field'] == 'priority1':
+                        student.priority1 = priority_info['priority_value']
+                        student.agreement1 = agreement
+                    elif priority_info['priority_field'] == 'priority2':
+                        student.priority2 = priority_info['priority_value']
+                        student.agreement2 = agreement
+                    elif priority_info['priority_field'] == 'priority3':
+                        student.priority3 = priority_info['priority_value']
+                        student.agreement3 = agreement
+                    elif priority_info['priority_field'] == 'priority4':
+                        student.priority4 = priority_info['priority_value']
+                        student.agreement4 = agreement
+                    
+                    # Сохраняем все изменения
+                    student.save()
+                    
+                    saved_ids.append(student_id)
+                    students_processed += 1
+                    if created:
+                        students_created += 1
+                    else:
+                        students_updated += 1
+                        
+                except KeyError as e:
+                    errors.append(f"Строка {row_num}: {str(e)}")
+                except ValueError as e:
+                    errors.append(f"Строка {row_num}: ошибка преобразования данных - {str(e)}")
+                except Exception as e:
+                    errors.append(f"Строка {row_num}: {str(e)}")
+        
+        # Проверяем, что записи действительно сохранились
+        count_after = Student.objects.count()
+        debug_info['db_count_after'] = count_after
+        debug_info['saved_ids_sample'] = saved_ids[:5] if saved_ids else []
+        
+        # Проверяем последнюю запись
+        if saved_ids:
+            try:
+                last_student = Student.objects.filter(student_id=saved_ids[-1]).first()
+                if last_student:
+                    debug_info['last_saved'] = {
+                        'id': last_student.student_id,
+                        'sum': last_student.ball_sum,
+                        'priority1': last_student.priority1,
+                        'priority2': last_student.priority2,
+                        'priority3': last_student.priority3,
+                        'priority4': last_student.priority4,
+                    }
+            except Exception as e:
+                debug_info['last_saved_error'] = str(e)
+        
+        # Формируем ответ
+        response_data = {
+            'success': True,
+            'message': f'Файл {filename} обработан',
+            'statistics': {
+                'processed': students_processed,
+                'created': students_created,
+                'updated': students_updated,
+                'errors': len(errors)
+            },
+            'direction': direction,
+            'date': file_date.strftime('%d.%m.%Y'),
+            'debug': debug_info
+        }
+        
+        if errors:
+            response_data['errors'] = errors[:20]
+            response_data['message'] = f'Файл обработан с {len(errors)} ошибками'
+        
+        # Логируем успех
+        logger.info(f"Загружено {students_processed} записей в таблицу {Student._meta.db_table}")
+        last_date = Student.objects.aggregate(Max('date'))['date__max']
+        if last_date:
+            update_passing_scores(last_date)
+        return JsonResponse(response_data)
+        
+    except Exception as e:
+        # Получаем полную информацию об ошибке
+        error_traceback = traceback.format_exc()
+        logger.error(f"Ошибка при обработке файла: {str(e)}\n{error_traceback}")
+        
+        return JsonResponse({
+            'error': f'Ошибка при обработке файла: {str(e)}',
+            'traceback': error_traceback,
+            'debug': debug_info
+        }, status=500)
+
+
+@csrf_exempt
+def clear_database(request):
+    """
+    Полная очистка базы данных от всех записей
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Метод не поддерживается'}, status=405)
+    
+    try:
+        # Получаем количество записей до удаления
+        count_before = Student.objects.count()
+        
+        # Удаляем все записи
+        Student.objects.all().delete()
+        DynBal.objects.all().delete()
+        # Проверяем, что записи действительно удалены
+        count_after = Student.objects.count()
+
+        
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'✅ База данных успешно очищена. Удалено записей: {count_before}',
+            'deleted_count': count_before,
+            'current_count': count_after
+        })
+        
+    except Exception as e:
+        logger.error(f"Ошибка при очистке базы данных: {str(e)}")
+        return JsonResponse({'error': f'Ошибка при очистке базы данных: {str(e)}'}, status=500)
+
+
+def total_students(request):
+    """
+    API для получения общего количества студентов в БД
+    """
+    try:
+        total = Student.objects.count()
+        return JsonResponse({'total': total})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 def get_enrolled_students_by_priority():
     """
@@ -306,70 +768,41 @@ def all_students_report(request):
             elif student.priority4 == direction and student.agreement4:
                 enrolled_stats[direction]['priority4'] += 1
     
-    # 4. Динамика проходного балла за последние 4 дня
+        # 4. Динамика проходного балла за последние 4 дня
     dynamics_data = {}
-    end_date = date.today()
+
+        # Определяем максимальную дату в БД
+    max_date = Student.objects.aggregate(Max('date'))['date__max']
+    if max_date:
+        end_date = max_date
+    else:
+        end_date = date.today()
+
     start_date = end_date - timedelta(days=3)
+
+    # Формируем даты для графиков (4 дня: start_date, start_date+1, start_date+2, end_date)
+    chart_dates = [
+        (start_date + timedelta(days=i)).strftime('%d.%m')
+        for i in range(4)
+    ]
+
+    # Динамика проходного балла за последние 4 дня (используем те же даты)
+    dynamics_data = {}
     places = {1: 40, 2: 50, 3: 30, 4: 20}
 
     for dir_code in DIRECTIONS.keys():
         dir_dynamics = []
-        
         for i in range(4):
             current_date = start_date + timedelta(days=i)
-            
-            # Получаем всех студентов с согласием на эту дату
-            students_on_date = Student.objects.filter(
-                Q(agreement1=True) | Q(agreement2=True) | 
-                Q(agreement3=True) | Q(agreement4=True),
-                date__lte=current_date
-            )
-            
-            # Определяем зачисленных на эту дату (аналогично основной логике)
-            temp_enrolled = {1: [], 2: [], 3: [], 4: []}
-            temp_students = []
-            
-            for student in students_on_date:
-                top_priority = None
-                if student.agreement1 and student.priority1 > 0:
-                    top_priority = student.priority1
-                elif student.agreement2 and student.priority2 > 0:
-                    top_priority = student.priority2
-                elif student.agreement3 and student.priority3 > 0:
-                    top_priority = student.priority3
-                elif student.agreement4 and student.priority4 > 0:
-                    top_priority = student.priority4
-                
-                if top_priority:
-                    temp_students.append({
-                        'student': student,
-                        'direction': top_priority,
-                        'ball_sum': student.ball_sum
-                    })
-            
-            # Сортируем и распределяем
-            temp_students.sort(key=lambda x: x['ball_sum'], reverse=True)
-            for s_data in temp_students:
-                dir_code_temp = s_data['direction']
-                if len(temp_enrolled[dir_code_temp]) < places.get(dir_code_temp, 0):
-                    temp_enrolled[dir_code_temp].append(s_data['student'])
-            
-            # Берём зачисленных на конкретное направление
-            enrolled_on_date = temp_enrolled.get(dir_code, [])
-            enrolled_on_date_sorted = sorted(enrolled_on_date, key=lambda x: x.ball_sum, reverse=True)
-            
-            total_places = places.get(dir_code, 0)
-            
-            # Определяем проходной балл на эту дату
-            if len(enrolled_on_date_sorted) >= total_places:
-                passing_score = enrolled_on_date_sorted[total_places - 1].ball_sum
-            elif len(enrolled_on_date_sorted) > 0:
-                passing_score = enrolled_on_date_sorted[-1].ball_sum
+            enrolled = get_enrolled_for_date(current_date)
+            students_on_dir = enrolled.get(dir_code, [])
+            if len(students_on_dir) >= places[dir_code]:
+                passing_score = students_on_dir[places[dir_code] - 1]['ball_sum']
+            elif students_on_dir:
+                passing_score = students_on_dir[-1]['ball_sum']
             else:
                 passing_score = 0
-                
             dir_dynamics.append(passing_score)
-        
         dynamics_data[dir_code] = dir_dynamics
     
     # 5. Проходные баллы на сегодня с учётом реального зачисления
@@ -493,6 +926,8 @@ def all_students_report(request):
         'enrolled_ivt_count': len(enrolled_lists.get(2, [])),
         'enrolled_itss_count': len(enrolled_lists.get(3, [])),
         'enrolled_ib_count': len(enrolled_lists.get(4, [])),
+
+        'chart_dates': json.dumps(chart_dates),
     }
     
     return render(request, 'all_students.html', context)

@@ -35,6 +35,14 @@ class Student(models.Model):
     priority4 = models.IntegerField(default=0)
     date = models.DateField()
 
+class DynBal(models.Model):
+    direction = models.IntegerField()  # 1-ПМ, 2-ИВТ, 3-ИТСС, 4-ИБ
+    date = models.DateField()
+    passing_score = models.IntegerField(null=True, blank=True)  # null = недобор
+
+    class Meta:
+        unique_together = ('direction', 'date')
+
 class Student1dayago(models.Model):
     """
     ID : айди человека

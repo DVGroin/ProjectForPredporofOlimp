@@ -3,71 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Таблица абитуриентов - Приёмная комиссия</title>
-    <!-- Подключаем библиотеку html2pdf -->
+    <title>Общий конкурсный список — Приёмная комиссия</title>
+    <!-- Подключаем библиотеки -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- Подключаем Font Awesome для иконок -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        /* Стили для страницы */
+        /* Базовые стили */
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Arial, sans-serif;
             max-width: 1400px;
             margin: 0 auto;
             padding: 20px;
-            background-color: #f5f5f5;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
         
         .container {
             background-color: white;
             padding: 20px;
             border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
         }
         
-        /* Стили для таблицы */
-        table {
-            border-collapse: collapse;
-            width: 100%;
-            margin: 20px 0;
-            font-family: Arial, sans-serif;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            font-size: 14px;
-        }
-        
-        th, td {
-            border: 1px solid #333;
-            padding: 8px 6px;
-            text-align: center;
-            vertical-align: middle;
-        }
-        
-        th {
-            background-color: #4CAF50;
-            color: white;
-            font-weight: bold;
-        }
-        
-        .header-main {
-            background-color: #2196F3;
-            font-size: 1.1em;
-        }
-        
-        .header-sub {
-            background-color: #FFC107;
-            color: #333;
-        }
-        
-        .row-label {
-            background-color: #f2f2f2;
-            font-weight: bold;
-            text-align: left;
-        }
-        
-        .group-title {
-            background-color: #e0e0e0;
-            font-weight: bold;
-        }
-        
-        /* Стили для кнопок */
+        /* Кнопки */
         .button-container {
             display: flex;
             gap: 10px;
@@ -83,6 +41,9 @@
             font-size: 16px;
             font-weight: 600;
             transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
         }
         
         .btn-primary {
@@ -90,207 +51,668 @@
             color: white;
         }
         
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        }
-        
         .btn-success {
             background: linear-gradient(45deg, #4CAF50, #45a049);
             color: white;
         }
         
-        .btn-success:hover {
+        .btn-info {
+            background: linear-gradient(45deg, #2196F3, #1976D2);
+            color: white;
+        }
+        
+        .btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
         
-        /* Стили для заголовка */
+        /* Заголовок */
         h2 {
-            color: #333;
             text-align: center;
-            margin-bottom: 30px;
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 28px;
         }
         
-        /* Стили для PDF-контейнера */
-        #pdf-content {
-            background-color: white;
+        h2 i {
+            color: #4CAF50;
+            margin-right: 10px;
+        }
+        
+        /* Статистика */
+        .stats-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: space-between;
+            margin-bottom: 25px;
+        }
+        
+        .stat-card {
+            flex: 1 1 200px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+        
+        .stat-card i {
+            font-size: 24px;
+            margin-right: 8px;
+        }
+        
+        .stat-card span {
+            font-size: 28px;
+            font-weight: bold;
+            display: block;
+            margin-top: 5px;
+        }
+        
+        /* Фильтры */
+        .filters-section {
+            background-color: #f8f9fa;
             padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .filters-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        .filters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .filter-group label {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #555;
+        }
+        
+        .filter-group input,
+        .filter-group select {
+            padding: 8px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        .filter-group input:focus,
+        .filter-group select:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+        
+        .filter-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        
+        .records-count {
+            margin: 10px 0;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        /* Таблица */
+        .table-container {
             overflow-x: auto;
+            margin: 20px 0;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-height: 500px;
+            overflow-y: auto;
         }
         
-        /* Стили для примера данных */
-        .sample-data {
-            background-color: #e8f5e9;
-            padding: 15px;
-            border-radius: 5px;
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            font-size: 13px;
+            background-color: white;
+        }
+        
+        th {
+            background-color: #4CAF50;
+            color: white;
+            font-weight: bold;
+            padding: 12px 6px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            white-space: nowrap;
+        }
+        
+        th.sortable {
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        th.sortable:hover {
+            background-color: #45a049;
+        }
+        
+        th i {
+            margin-left: 5px;
+            font-size: 12px;
+        }
+        
+        /* Уменьшенный шрифт для компактных колонок (согласия и приоритеты) */
+        th.compact {
+            font-size: 0.8em;
+            white-space: normal;
+            line-height: 1.2;
+        }
+        
+        td {
+            padding: 8px 6px;
+            border: 1px solid #ddd;
+            text-align: center;
+            vertical-align: middle;
+        }
+        
+        tbody tr:hover {
+            background-color: #f5f5f5;
+        }
+        
+        /* Стили для согласий и приоритетов */
+        .agreement-yes {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+        
+        .priority-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .priority-pm { background-color: #4CAF50; }
+        .priority-ivt { background-color: #2196F3; }
+        .priority-itss { background-color: #FF9800; }
+        .priority-ib { background-color: #f44336; }
+        
+        /* Пагинация */
+        .pagination {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
             margin-top: 20px;
+            align-items: center;
         }
         
-        .sample-data p {
-            margin: 5px 0;
-            color: #2e7d32;
+        .pagination button {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            background-color: white;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+        
+        .pagination button:hover {
+            background-color: #4CAF50;
+            color: white;
+            border-color: #4CAF50;
+        }
+        
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
         
         /* Расшифровка направлений */
-        .direction-code {
-            font-weight: bold;
-            color: #1565C0;
-        }
-        .direction-note {
+        .direction-legend {
+            margin-top: 15px;
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
             font-size: 12px;
-            color: #666;
-            margin-top: 5px;
-            text-align: left;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+        }
+        
+        /* Адаптивность */
+        @media (max-width: 768px) {
+            .filters-grid {
+                grid-template-columns: 1fr;
+            }
+            .stats-container {
+                flex-direction: column;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- Контейнер с кнопками (НЕ входит в PDF) -->
+        <!-- Кнопки -->
         <div class="button-container">
-            <!-- Кнопка для перехода к списку студентов (заглушка) -->
             <a href="/">
-                <button class="btn btn-primary">Главная</button>
+                <button class="btn btn-primary"><i class="fas fa-home"></i> Главная</button>
             </a>
-            <!-- Кнопка для скачивания PDF -->
-            <button class="btn btn-success" onclick="downloadPDF()">📥 Скачать таблицу в PDF</button>
+            <button class="btn btn-info" onclick="resetFilters()"><i class="fas fa-undo"></i> Сбросить фильтры</button>
+            <button class="btn btn-success" onclick="downloadPDF()"><i class="fas fa-file-pdf"></i> Скачать PDF</button>
         </div>
-        
-        <!-- Контейнер для PDF (включает заголовок и таблицу) -->
+
+        <!-- Контейнер для PDF -->
         <div id="pdf-content">
-            <h2>Общий конкурсный список</h2>
-            
-            <table>
-                <thead>
-                    <tr>
-                        <th rowspan="2">ID</th>
-                        <th colspan="4">Согласия</th>
-                        <th colspan="4">Баллы ЕГЭ</th>
-                        <th colspan="4">Приоритеты</th>
-                    </tr>
-                    <tr>
-                        <!-- Подзаголовки для согласий -->
-                        <th>ПМ</th>
-                        <th>ИВТ</th>
-                        <th>ИТСС</th>
-                        <th>ИБ</th>
-                        <!-- Подзаголовки для баллов -->
-                        <th>Русский</th>
-                        <th>Математика</th>
-                        <th>Физика/ИКТ</th>
-                        <th>Достижения</th>
-                        <!-- Подзаголовки для приоритетов -->
-                        <th>1</th>
-                        <th>2</th>
-                        <th>3</th>
-                        <th>4</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for student in students %}
-                    <tr>
-                        <td>{{ student.student_id }}</td>
-                        <!-- Согласия: 1 - да, 0 - нет -->
-                        {% if student.agreement1 == 0 %}
-                        <td> </td>
-                        {% else %}
-                        <td>✅</td>
-                        {% endif %}
-                        {% if student.agreement2 == 0 %}
-                        <td> </td>
-                        {% else %}
-                        <td>✅</td>
-                        {% endif %}
-                        {% if student.agreement3 == 0 %}
-                        <td> </td>
-                        {% else %}
-                        <td>✅</td>
-                        {% endif %}
-                        {% if student.agreement4 == 0 %}
-                        <td> </td>
-                        {% else %}
-                        <td>✅</td>
-                        {% endif %}
-                        <!-- Баллы -->
-                        <td>{{ student.ball_rus }}</td>
-                        <td>{{ student.ball_mat }}</td>
-                        <td>{{ student.ball_pro }}</td>
-                        <td>{{ student.ball_ind }}</td>
-                        <!-- Приоритеты: 1 - ПМ, 2 - ИВТ, 3 - ИТСС, 0 - ИБ -->
-                        {% if student.priority1 == 1 %}
-                        <td>ПМ</td>
-                        {% elif student.priority2 == 1%}
-                        <td>ИВТ</td>
-                        {% elif student.priority3 == 1%}
-                        <td>ИТСС</td>
-                        {% elif student.priority4 == 1%}
-                        <td>ИБ</td>
-                        {% else %}
-                        <td></td>
-                        {% endif %}
-                        {% if student.priority1 == 2 %}
-                        <td>ПМ</td>
-                        {% elif student.priority2 == 2%}
-                        <td>ИВТ</td>
-                        {% elif student.priority3 == 2%}
-                        <td>ИТСС</td>
-                        {% elif student.priority4 == 2%}
-                        <td>ИБ</td>
-                        {% else %}
-                        <td></td>
-                        {% endif %}
-                        {% if student.priority1 == 3 %}
-                        <td>ПМ</td>
-                        {% elif student.priority2 == 3%}
-                        <td>ИВТ</td>
-                        {% elif student.priority3 == 3%}
-                        <td>ИТСС</td>
-                        {% elif student.priority4 == 3%}
-                        <td>ИБ</td>
-                        {% else %}
-                        <td></td>
-                        {% endif %}
-                        {% if student.priority1 == 4 %}
-                        <td>ПМ</td>
-                        {% elif student.priority2 == 4%}
-                        <td>ИВТ</td>
-                        {% elif student.priority3 == 4%}
-                        <td>ИТСС</td>
-                        {% elif student.priority4 == 4%}
-                        <td>ИБ</td>
-                        {% else %}
-                        <td></td>
-                        {% endif %}
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            
-            
-        
-        <!-- Пояснение к данным -->
-        
+            <h2><i class="fas fa-list-ul"></i> Общий конкурсный список</h2>
+
+            <!-- Статистика -->
+            <div class="stats-container" id="statsContainer">
+                <div class="stat-card">
+                    <i class="fas fa-users"></i> Всего студентов
+                    <span id="totalStudents">0</span>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-check-circle"></i> Согласия ПМ
+                    <span id="agreePm">0</span>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-check-circle"></i> Согласия ИВТ
+                    <span id="agreeIvt">0</span>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-check-circle"></i> Согласия ИТСС
+                    <span id="agreeItss">0</span>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-check-circle"></i> Согласия ИБ
+                    <span id="agreeIb">0</span>
+                </div>
+            </div>
+
+            <!-- Фильтры -->
+            <div class="filters-section">
+                <div class="filters-title">
+                    <i class="fas fa-filter"></i> Фильтры и сортировка
+                </div>
+                <div class="filters-grid">
+                    <div class="filter-group">
+                        <label><i class="fas fa-search"></i> Поиск по ID:</label>
+                        <input type="text" id="searchId" placeholder="Введите ID..." oninput="filterTable()">
+                    </div>
+                    <div class="filter-group">
+                        <label><i class="fas fa-check-circle"></i> Наличие согласия:</label>
+                        <select id="agreementFilter" onchange="filterTable()">
+                            <option value="all">Все</option>
+                            <option value="any">Есть согласие (любое)</option>
+                            <option value="pm">Согласие на ПМ</option>
+                            <option value="ivt">Согласие на ИВТ</option>
+                            <option value="itss">Согласие на ИТСС</option>
+                            <option value="ib">Согласие на ИБ</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label><i class="fas fa-sort-amount-down"></i> Сортировать по:</label>
+                        <select id="sortBy" onchange="filterTable()">
+                            <option value="id">ID (возрастание)</option>
+                            <option value="id-desc">ID (убывание)</option>
+                            <option value="sum">Сумма баллов (возраст.)</option>
+                            <option value="sum-desc">Сумма баллов (убыв.)</option>
+                            <option value="date">Дата (сначала старые)</option>
+                            <option value="date-desc">Дата (сначала новые)</option>
+                            <!-- Сортировка по приоритетам -->
+                            <option value="priority1">Приоритет 1 (возраст.)</option>
+                            <option value="priority1-desc">Приоритет 1 (убыв.)</option>
+                            <option value="priority2">Приоритет 2 (возраст.)</option>
+                            <option value="priority2-desc">Приоритет 2 (убыв.)</option>
+                            <option value="priority3">Приоритет 3 (возраст.)</option>
+                            <option value="priority3-desc">Приоритет 3 (убыв.)</option>
+                            <option value="priority4">Приоритет 4 (возраст.)</option>
+                            <option value="priority4-desc">Приоритет 4 (убыв.)</option>
+                            <!-- Сортировка по согласиям -->
+                            <option value="agree1">Согласие ПМ (сначала есть)</option>
+                            <option value="agree1-desc">Согласие ПМ (сначала нет)</option>
+                            <option value="agree2">Согласие ИВТ (сначала есть)</option>
+                            <option value="agree2-desc">Согласие ИВТ (сначала нет)</option>
+                            <option value="agree3">Согласие ИТСС (сначала есть)</option>
+                            <option value="agree3-desc">Согласие ИТСС (сначала нет)</option>
+                            <option value="agree4">Согласие ИБ (сначала есть)</option>
+                            <option value="agree4-desc">Согласие ИБ (сначала нет)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="filter-actions">
+                    <span class="records-count" id="recordsCount">Показано записей: 0</span>
+                </div>
+            </div>
+
+            <!-- Таблица -->
+            <div class="table-container">
+                <table id="studentsTable">
+                    <thead>
+                        <tr>
+                            <th class="sortable" onclick="sortTable('id')">ID <i class="fas fa-sort" id="sort-id"></i></th>
+                            <!-- Согласия – сортируемые и компактные -->
+                            <th class="sortable compact" onclick="sortTable('agree1')">Согл. ПМ <i class="fas fa-sort" id="sort-agree1"></i></th>
+                            <th class="sortable compact" onclick="sortTable('agree2')">Согл. ИВТ <i class="fas fa-sort" id="sort-agree2"></i></th>
+                            <th class="sortable compact" onclick="sortTable('agree3')">Согл. ИТСС <i class="fas fa-sort" id="sort-agree3"></i></th>
+                            <th class="sortable compact" onclick="sortTable('agree4')">Согл. ИБ <i class="fas fa-sort" id="sort-agree4"></i></th>
+                            <!-- Баллы -->
+                            <th class="sortable" onclick="sortTable('rus')">Русский <i class="fas fa-sort" id="sort-rus"></i></th>
+                            <th class="sortable" onclick="sortTable('mat')">Математика <i class="fas fa-sort" id="sort-mat"></i></th>
+                            <th class="sortable" onclick="sortTable('pro')">Физика/ИКТ <i class="fas fa-sort" id="sort-pro"></i></th>
+                            <th class="sortable" onclick="sortTable('ind')">Индивид. <i class="fas fa-sort" id="sort-ind"></i></th>
+                            <th class="sortable" onclick="sortTable('sum')">Сумма <i class="fas fa-sort" id="sort-sum"></i></th>
+                            <!-- Приоритеты – компактные -->
+                            <th class="sortable compact" onclick="sortTable('priority1')">Приор.1 <i class="fas fa-sort" id="sort-priority1"></i></th>
+                            <th class="sortable compact" onclick="sortTable('priority2')">Приор.2 <i class="fas fa-sort" id="sort-priority2"></i></th>
+                            <th class="sortable compact" onclick="sortTable('priority3')">Приор.3 <i class="fas fa-sort" id="sort-priority3"></i></th>
+                            <th class="sortable compact" onclick="sortTable('priority4')">Приор.4 <i class="fas fa-sort" id="sort-priority4"></i></th>
+                            <!-- Дата -->
+                            <th class="sortable" onclick="sortTable('date')">Дата <i class="fas fa-sort" id="sort-date"></i></th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        {% for student in students %}
+                        <tr data-id="{{ student.student_id }}"
+                            data-sum="{{ student.ball_sum }}"
+                            data-rus="{{ student.ball_rus }}"
+                            data-mat="{{ student.ball_mat }}"
+                            data-pro="{{ student.ball_pro }}"
+                            data-ind="{{ student.ball_ind }}"
+                            data-date="{{ student.date|date:'Ymd' }}"
+                            data-agree1="{{ student.agreement1|yesno:'true,false' }}"
+                            data-agree2="{{ student.agreement2|yesno:'true,false' }}"
+                            data-agree3="{{ student.agreement3|yesno:'true,false' }}"
+                            data-agree4="{{ student.agreement4|yesno:'true,false' }}"
+                            data-priority1="{{ student.priority1 }}"
+                            data-priority2="{{ student.priority2 }}"
+                            data-priority3="{{ student.priority3 }}"
+                            data-priority4="{{ student.priority4 }}">
+                            <td>{{ student.student_id }}</td>
+                            <td class="agreement">{% if student.agreement1 %}✅{% endif %}</td>
+                            <td class="agreement">{% if student.agreement2 %}✅{% endif %}</td>
+                            <td class="agreement">{% if student.agreement3 %}✅{% endif %}</td>
+                            <td class="agreement">{% if student.agreement4 %}✅{% endif %}</td>
+                            <td>{{ student.ball_rus }}</td>
+                            <td>{{ student.ball_mat }}</td>
+                            <td>{{ student.ball_pro }}</td>
+                            <td>{{ student.ball_ind }}</td>
+                            <td><strong>{{ student.ball_sum }}</strong></td>
+                            <td>{% if student.priority1 == 1 %}ПМ{% elif student.priority1 == 2 %}ИВТ{% elif student.priority1 == 3 %}ИТСС{% elif student.priority1 == 4 %}ИБ{% endif %}</td>
+                            <td>{% if student.priority2 == 1 %}ПМ{% elif student.priority2 == 2 %}ИВТ{% elif student.priority2 == 3 %}ИТСС{% elif student.priority2 == 4 %}ИБ{% endif %}</td>
+                            <td>{% if student.priority3 == 1 %}ПМ{% elif student.priority3 == 2 %}ИВТ{% elif student.priority3 == 3 %}ИТСС{% elif student.priority3 == 4 %}ИБ{% endif %}</td>
+                            <td>{% if student.priority4 == 1 %}ПМ{% elif student.priority4 == 2 %}ИВТ{% elif student.priority4 == 3 %}ИТСС{% elif student.priority4 == 4 %}ИБ{% endif %}</td>
+                            <td>{{ student.date|date:"d.m.Y" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="15" style="text-align:center; padding:30px;">
+                                <i class="fas fa-info-circle" style="font-size:24px; color:#999;"></i><br>
+                                Нет данных
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Пагинация -->
+            <div class="pagination" id="pagination">
+                <button onclick="changePage('prev')" id="prevPage"><i class="fas fa-chevron-left"></i></button>
+                <span id="pageInfo">Страница 1 из <span id="totalPages">1</span></span>
+                <button onclick="changePage('next')" id="nextPage"><i class="fas fa-chevron-right"></i></button>
+            </div>
+
+            <!-- Легенда -->
+            <div class="direction-legend">
+                <div class="legend-item"><span class="legend-color" style="background:#4CAF50;"></span> ПМ</div>
+                <div class="legend-item"><span class="legend-color" style="background:#2196F3;"></span> ИВТ</div>
+                <div class="legend-item"><span class="legend-color" style="background:#FF9800;"></span> ИТСС</div>
+                <div class="legend-item"><span class="legend-color" style="background:#f44336;"></span> ИБ</div>
+            </div>
+        </div>
     </div>
 
     <script>
-        // Функция для скачивания таблицы в PDF
+        // Глобальные переменные
+        let currentPage = 1;
+        let rowsPerPage = 25;
+        let currentData = [];
+        let filteredData = [];
+
+        // Функция сбора данных из таблицы
+        function getTableData() {
+            const rows = document.querySelectorAll('#tableBody tr');
+            const data = [];
+            rows.forEach(row => {
+                if (row.cells.length > 1 && !row.querySelector('td[colspan]')) {
+                    data.push({
+                        id: parseInt(row.dataset.id),
+                        sum: parseInt(row.dataset.sum),
+                        rus: parseInt(row.dataset.rus),
+                        mat: parseInt(row.dataset.mat),
+                        pro: parseInt(row.dataset.pro),
+                        ind: parseInt(row.dataset.ind),
+                        date: row.dataset.date,
+                        agree1: row.dataset.agree1 === 'true',
+                        agree2: row.dataset.agree2 === 'true',
+                        agree3: row.dataset.agree3 === 'true',
+                        agree4: row.dataset.agree4 === 'true',
+                        priority1: parseInt(row.dataset.priority1),
+                        priority2: parseInt(row.dataset.priority2),
+                        priority3: parseInt(row.dataset.priority3),
+                        priority4: parseInt(row.dataset.priority4),
+                        element: row
+                    });
+                }
+            });
+            return data;
+        }
+
+        // Обновление статистики
+        function updateStats() {
+            const students = currentData;
+            document.getElementById('totalStudents').textContent = students.length;
+            document.getElementById('agreePm').textContent = students.filter(s => s.agree1).length;
+            document.getElementById('agreeIvt').textContent = students.filter(s => s.agree2).length;
+            document.getElementById('agreeItss').textContent = students.filter(s => s.agree3).length;
+            document.getElementById('agreeIb').textContent = students.filter(s => s.agree4).length;
+        }
+
+        // Фильтрация
+        function filterTable() {
+            const searchId = document.getElementById('searchId').value.toLowerCase();
+            const agreementFilter = document.getElementById('agreementFilter').value;
+            const sortBy = document.getElementById('sortBy').value;
+
+            currentData = getTableData();
+            filteredData = currentData.filter(student => {
+                if (searchId && !student.id.toString().includes(searchId)) return false;
+                if (agreementFilter !== 'all') {
+                    if (agreementFilter === 'any' && !(student.agree1 || student.agree2 || student.agree3 || student.agree4)) return false;
+                    if (agreementFilter === 'pm' && !student.agree1) return false;
+                    if (agreementFilter === 'ivt' && !student.agree2) return false;
+                    if (agreementFilter === 'itss' && !student.agree3) return false;
+                    if (agreementFilter === 'ib' && !student.agree4) return false;
+                }
+                return true;
+            });
+
+            applySorting(sortBy);
+            updateTableVisibility();
+            updateRecordsCount();
+            updatePaginationInfo();
+            updateStats();
+        }
+
+        // Сортировка
+        function applySorting(sortBy) {
+            const [field, direction] = sortBy.split('-');
+            const desc = direction === 'desc';
+            
+            filteredData.sort((a, b) => {
+                let valA, valB;
+                
+                // Числовые поля
+                if (field === 'id') { valA = a.id; valB = b.id; }
+                else if (field === 'sum') { valA = a.sum; valB = b.sum; }
+                else if (field === 'rus') { valA = a.rus; valB = b.rus; }
+                else if (field === 'mat') { valA = a.mat; valB = b.mat; }
+                else if (field === 'pro') { valA = a.pro; valB = b.pro; }
+                else if (field === 'ind') { valA = a.ind; valB = b.ind; }
+                else if (field === 'date') { valA = parseInt(a.date); valB = parseInt(b.date); }
+                else if (field === 'priority1') { valA = a.priority1; valB = b.priority1; }
+                else if (field === 'priority2') { valA = a.priority2; valB = b.priority2; }
+                else if (field === 'priority3') { valA = a.priority3; valB = b.priority3; }
+                else if (field === 'priority4') { valA = a.priority4; valB = b.priority4; }
+                
+                // Логические поля согласий – специальная обработка
+                else if (field === 'agree1') {
+                    if (desc) {
+                        // сначала нет (false), потом есть (true)
+                        return (a.agree1 === b.agree1) ? 0 : a.agree1 ? 1 : -1;
+                    } else {
+                        // сначала есть (true), потом нет (false)
+                        return (a.agree1 === b.agree1) ? 0 : a.agree1 ? -1 : 1;
+                    }
+                }
+                else if (field === 'agree2') {
+                    if (desc) {
+                        return (a.agree2 === b.agree2) ? 0 : a.agree2 ? 1 : -1;
+                    } else {
+                        return (a.agree2 === b.agree2) ? 0 : a.agree2 ? -1 : 1;
+                    }
+                }
+                else if (field === 'agree3') {
+                    if (desc) {
+                        return (a.agree3 === b.agree3) ? 0 : a.agree3 ? 1 : -1;
+                    } else {
+                        return (a.agree3 === b.agree3) ? 0 : a.agree3 ? -1 : 1;
+                    }
+                }
+                else if (field === 'agree4') {
+                    if (desc) {
+                        return (a.agree4 === b.agree4) ? 0 : a.agree4 ? 1 : -1;
+                    } else {
+                        return (a.agree4 === b.agree4) ? 0 : a.agree4 ? -1 : 1;
+                    }
+                }
+                else {
+                    return 0;
+                }
+
+                // Для числовых полей используем обычное сравнение
+                if (desc) return valB - valA;
+                else return valA - valB;
+            });
+        }
+
+        // Обновление видимости строк
+        function updateTableVisibility() {
+            currentData.forEach(s => s.element.style.display = 'none');
+            const start = (currentPage - 1) * rowsPerPage;
+            const end = start + rowsPerPage;
+            const pageData = filteredData.slice(start, end);
+            pageData.forEach(s => s.element.style.display = '');
+            updatePaginationButtons();
+        }
+
+        // Пагинация
+        function updatePaginationInfo() {
+            const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+            document.getElementById('totalPages').textContent = totalPages || 1;
+            document.getElementById('pageInfo').innerHTML = `Страница ${currentPage} из <span id="totalPages">${totalPages || 1}</span>`;
+        }
+
+        function updatePaginationButtons() {
+            const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+            document.getElementById('prevPage').disabled = currentPage === 1;
+            document.getElementById('nextPage').disabled = currentPage === totalPages || totalPages === 0;
+        }
+
+        function changePage(direction) {
+            const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+            if (direction === 'prev' && currentPage > 1) currentPage--;
+            if (direction === 'next' && currentPage < totalPages) currentPage++;
+            updateTableVisibility();
+            updatePaginationInfo();
+        }
+
+        // Сортировка по клику на заголовок
+        function sortTable(column) {
+            const sortSelect = document.getElementById('sortBy');
+            const currentValue = sortSelect.value;
+            
+            if (currentValue === column) {
+                sortSelect.value = column + '-desc';
+            } else if (currentValue === column + '-desc') {
+                sortSelect.value = column;
+            } else {
+                sortSelect.value = column;
+            }
+            filterTable();
+        }
+
+        // Сброс фильтров
+        function resetFilters() {
+            document.getElementById('searchId').value = '';
+            document.getElementById('agreementFilter').value = 'all';
+            document.getElementById('sortBy').value = 'id';
+            currentPage = 1;
+            filterTable();
+        }
+
+        // Обновление счётчика записей
+        function updateRecordsCount() {
+            document.getElementById('recordsCount').textContent = `Показано записей: ${filteredData.length} из ${currentData.length}`;
+        }
+
+        // PDF
         function downloadPDF() {
-            // Получаем элемент с заголовком и таблицей
             const element = document.getElementById('pdf-content');
-            
-            // Настройки для PDF
             const opt = {
-                margin:        [0.5, 0.5, 0.5, 0.5], // отступы: верх, право, низ, лево (в дюймах)
-                filename:     'tablica_abiturientov.pdf',
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, letterRendering: true },
-                jsPDF:        { unit: 'in', format: 'a4', orientation: 'landscape' } // альбомная ориентация для широкой таблицы
+                margin: [0.4, 0.4, 0.4, 0.4],
+                filename: 'obsche_spisok.pdf',
+                image: { type: 'jpeg', quality: 0.95 },
+                html2canvas: { scale: 1.5, letterRendering: true },
+                jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
             };
-            
-            // Скачиваем PDF
             html2pdf().set(opt).from(element).save();
         }
+
+        // Инициализация
+        document.addEventListener('DOMContentLoaded', () => {
+            currentData = getTableData();
+            filteredData = [...currentData];
+            updateStats();
+            updateRecordsCount();
+            updatePaginationInfo();
+            filterTable();
+        });
     </script>
 </body>
 </html>

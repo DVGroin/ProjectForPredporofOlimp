@@ -3,108 +3,604 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Это главная страничка</title>
+    <title>Главная страница приёмной комиссии</title>
+    <!-- Подключаем Font Awesome для иконок -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            max-width: 600px;
+            width: 90%;
+            background-color: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            animation: slideIn 0.5s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 32px;
+            font-weight: 600;
+            border-bottom: 3px solid #4CAF50;
+            padding-bottom: 15px;
+        }
+        
+        h1 i {
+            color: #4CAF50;
+            margin-right: 10px;
+        }
+        
+        .menu-section {
+            margin-bottom: 30px;
+        }
+        
+        .menu-section h2 {
+            color: #666;
+            font-size: 18px;
+            margin-bottom: 15px;
+            padding-left: 10px;
+            border-left: 4px solid #4CAF50;
+        }
+        
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 15px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .btn i {
+            font-size: 18px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+        }
+        
+        .btn:active {
+            transform: translateY(-1px);
+        }
+        
+        /* Цвета для разных кнопок */
+        .btn-green {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+        }
+        
+        .btn-blue {
+            background: linear-gradient(135deg, #2196F3, #1976D2);
+        }
+        
+        .btn-orange {
+            background: linear-gradient(135deg, #FF9800, #F57C00);
+        }
+        
+        .btn-red {
+            background: linear-gradient(135deg, #f44336, #d32f2f);
+        }
+        
+        .btn-purple {
+            background: linear-gradient(135deg, #9C27B0, #7B1FA2);
+        }
+        
+        .btn-teal {
+            background: linear-gradient(135deg, #009688, #00796B);
+        }
+        
+        .btn-indigo {
+            background: linear-gradient(135deg, #3F51B5, #303F9F);
+        }
+        
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px dashed #ddd;
+        }
+        
+        .action-btn {
+            flex: 1;
+            padding: 18px;
+            font-size: 18px;
+        }
+        
+        .footer-note {
+            text-align: center;
+            margin-top: 25px;
+            color: #999;
+            font-size: 14px;
+        }
+        
+        .footer-note i {
+            color: #f44336;
+        }
+        
+        /* Модальное окно для подтверждения */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 400px;
+            text-align: center;
+            animation: modalSlideIn 0.3s ease-out;
+        }
+        
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .modal-icon {
+            font-size: 48px;
+            color: #f44336;
+            margin-bottom: 20px;
+        }
+        
+        .modal h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+        
+        .modal p {
+            color: #666;
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+        
+        .modal-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+        
+        .modal-btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .modal-btn.confirm {
+            background: linear-gradient(135deg, #f44336, #d32f2f);
+            color: white;
+        }
+        
+        .modal-btn.cancel {
+            background: linear-gradient(135deg, #9e9e9e, #757575);
+            color: white;
+        }
+        
+        .modal-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+        
+        /* Уведомления */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            z-index: 1001;
+            animation: slideInRight 0.3s ease-out;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        .notification.success {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+        }
+        
+        .notification.error {
+            background: linear-gradient(135deg, #f44336, #d32f2f);
+        }
+        
+        .notification.info {
+            background: linear-gradient(135deg, #2196F3, #1976D2);
+        }
+        
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        .fade-out {
+            animation: fadeOut 0.3s ease-out forwards;
+        }
+        
+        @keyframes fadeOut {
+            to {
+                opacity: 0;
+                transform: translateX(50px);
+            }
+        }
+    </style>
 </head>
 <body>
-    <div><a href="/all_students" style="
-    background-color: #4CAF50;
-    border: none;
-    color: white;
-    padding: 15px 32px;
-    text-align: center;
-    text-decoration: none;
-    display: inline-block;
-    font-size: 16px;
-    margin: 4px 2px;
-    cursor: pointer;
-    border-radius: 4px;
-    width: 300px;
-">
-        Сводный отчёт
-    </a></div>
-    <div><a href="/pm_students" style="
-    background-color: #4CAF50;
-    border: none;
-    color: white;
-    padding: 15px 32px;
-    text-align: center;
-    text-decoration: none;
-    display: inline-block;
-    font-size: 16px;
-    margin: 4px 2px;
-    cursor: pointer;
-    border-radius: 4px;
-    width: 300px;
-">
-        Конкурсные списки ПМ
-    </a></div>
-    <div><a href="/ivt_students" style="
-    background-color: #4CAF50;
-    border: none;
-    color: white;
-    padding: 15px 32px;
-    text-align: center;
-    text-decoration: none;
-    display: inline-block;
-    font-size: 16px;
-    margin: 4px 2px;
-    cursor: pointer;
-    border-radius: 4px;
-    width: 300px;
-">
-        Конкурсные списки ИВТ
-    </a></div>
-    <div><a href="/itss_students" style="
-    background-color: #4CAF50;
-    border: none;
-    color: white;
-    padding: 15px 32px;
-    text-align: center;
-    text-decoration: none;
-    display: inline-block;
-    font-size: 16px;
-    margin: 4px 2px;
-    cursor: pointer;
-    border-radius: 4px;
-    width: 300px;
-">
-        Конкурсные списки ИТСС
-    </a></div>
-    <div><a href="/ib_students" style="
-    background-color: #4CAF50;
-    border: none;
-    color: white;
-    padding: 15px 32px;
-    text-align: center;
-    text-decoration: none;
-    display: inline-block;
-    font-size: 16px;
-    margin: 4px 2px;
-    cursor: pointer;
-    border-radius: 4px;
-    width: 300px;
-">
-        Конкурсные списки ИБ
-    </a>
-</div>
-<div><a href="/vse_spiski" style="
-    background-color: #4CAF50;
-    border: none;
-    color: white;
-    padding: 15px 32px;
-    text-align: center;
-    text-decoration: none;
-    display: inline-block;
-    font-size: 16px;
-    margin: 4px 2px;
-    cursor: pointer;
-    border-radius: 4px;
-    width: 300px;
-">
-Конкурсные списки
-    </a></div>
-</body>
-<footer>
+    <div class="container">
+        <h1>
+            <i class="fas fa-university"></i>
+            Приёмная комиссия 2025
+        </h1>
+        
+        <!-- Отчёты -->
+        <div class="menu-section">
+            <h2><i class="fas fa-chart-bar"></i> Отчёты</h2>
+            <div class="button-grid">
+                <a href="/all_students" class="btn btn-purple">
+                    <i class="fas fa-chart-pie"></i>
+                    Сводный отчёт
+                </a>
+                <a href="/vse_spiski" class="btn btn-teal">
+                    <i class="fas fa-list"></i>
+                    Все конкурсные списки
+                </a>
+            </div>
+        </div>
+        
+        <!-- Конкурсные списки по направлениям -->
+        <div class="menu-section">
+            <h2><i class="fas fa-graduation-cap"></i> Конкурсные списки по направлениям</h2>
+            <div class="button-grid">
+                <a href="/pm_students" class="btn btn-green">
+                    <i class="fas fa-calculator"></i>
+                    Прикладная математика (ПМ)
+                </a>
+                <a href="/ivt_students" class="btn btn-blue">
+                    <i class="fas fa-laptop-code"></i>
+                    Информатика и ВТ (ИВТ)
+                </a>
+                <a href="/itss_students" class="btn btn-orange">
+                    <i class="fas fa-network-wired"></i>
+                    Инфокоммуникационные технологии (ИТСС)
+                </a>
+                <a href="/ib_students" class="btn btn-red">
+                    <i class="fas fa-shield-alt"></i>
+                    Информационная безопасность (ИБ)
+                </a>
+            </div>
+        </div>
+        
+        <!-- Действия с базой данных -->
+        <div class="action-buttons">
+            <button onclick="showAddListModal()" class="btn btn-indigo action-btn">
+                <i class="fas fa-plus-circle"></i>
+                Добавить список
+            </button>
+            <button onclick="showClearDBModal()" class="btn btn-red action-btn">
+                <i class="fas fa-trash-alt"></i>
+                Очистить БД
+            </button>
+        </div>
+        
+        <div class="footer-note">
+            <i class="fas fa-info-circle"></i>
+            Всего абитуриентов в базе: <span id="totalStudents">0</span>
+        </div>
+    </div>
+    
+    <!-- Модальное окно для добавления списка -->
+    <div id="addListModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-icon">
+                <i class="fas fa-file-import" style="color: #2196F3;"></i>
+            </div>
+            <h3>Добавить список абитуриентов</h3>
+            <p>Выберите файл с данными абитуриентов для загрузки в базу данных.</p>
+            <p style="font-size: 14px; color: #666; margin-top: -10px;">Поддерживаемый формат: CSV (например: 01.08_ИБ.csv)</p>
+            <input type="file" id="fileInput" accept=".csv" style="margin-bottom: 20px; padding: 10px; border: 2px dashed #ddd; border-radius: 8px; width: 100%; box-sizing: border-box;">
+            <div class="modal-buttons">
+                <button onclick="uploadFile()" class="modal-btn confirm">
+                    <i class="fas fa-upload"></i> Загрузить
+                </button>
+                <button onclick="closeModal('addListModal')" class="modal-btn cancel">
+                    <i class="fas fa-times"></i> Отмена
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Модальное окно для очистки БД -->
+    <div id="clearDBModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <h3>Очистить базу данных?</h3>
+            <p>Вы уверены, что хотите удалить <strong>ВСЕХ</strong> абитуриентов из базы данных? Это действие нельзя отменить!</p>
+            <div class="modal-buttons">
+                <button onclick="clearDatabase()" class="modal-btn confirm">
+                    <i class="fas fa-trash"></i> Да, очистить
+                </button>
+                <button onclick="closeModal('clearDBModal')" class="modal-btn cancel">
+                    <i class="fas fa-times"></i> Отмена
+                </button>
+            </div>
+        </div>
+    </div>
 
-</footer>
+    <script>
+        // Функция для отображения уведомления
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `
+                <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
+                ${message}
+            `;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.classList.add('fade-out');
+                setTimeout(() => {
+                    notification.remove();
+                }, 300);
+            }, 3000);
+        }
+        
+        // Функция для открытия модального окна
+        function showModal(modalId) {
+            document.getElementById(modalId).style.display = 'flex';
+        }
+        
+        // Функция для закрытия модального окна
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+        
+        // Показать модальное окно добавления списка
+        function showAddListModal() {
+            showModal('addListModal');
+        }
+        
+        // Показать модальное окно очистки БД
+        function showClearDBModal() {
+            showModal('clearDBModal');
+        }
+        
+        // Функция для получения CSRF токена из куки
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        
+        // Функция загрузки файла
+        function uploadFile() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showNotification('Пожалуйста, выберите файл для загрузки', 'error');
+                return;
+            }
+            
+            // Проверяем расширение файла
+            if (!file.name.toLowerCase().endsWith('.csv')) {
+                showNotification('Файл должен быть в формате CSV', 'error');
+                return;
+            }
+            
+            // Проверяем формат имени файла (DD.MM_НАПРАВЛЕНИЕ.csv)
+            const filenamePattern = /^\d{2}\.\d{2}_(ПМ|ИВТ|ИТСС|ИБ)\.csv$/;
+            if (!filenamePattern.test(file.name)) {
+                showNotification('Неверный формат имени файла. Ожидается: DD.MM_НАПРАВЛЕНИЕ.csv (например: 01.08_ИБ.csv)', 'error');
+                return;
+            }
+            
+            // Создаем FormData для отправки файла
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            // Показываем индикатор загрузки
+            showNotification('Загрузка файла...', 'info');
+            
+            // Отправляем файл на сервер
+            fetch('/api/upload-students/', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.error || `HTTP error! status: ${response.status}`);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    let message = data.message;
+                    if (data.statistics) {
+                        message = `✅ Файл успешно загружен!\n`;
+                        message += `📊 Обработано: ${data.statistics.processed}\n`;
+                        message += `✨ Создано: ${data.statistics.created}\n`;
+                        message += `🔄 Обновлено: ${data.statistics.updated}`;
+                        
+                        if (data.statistics.errors > 0) {
+                            message += `\n⚠️ Ошибок: ${data.statistics.errors}`;
+                        }
+                    }
+                    showNotification(message, 'success');
+                    
+                    // Если есть ошибки, показываем их в консоли
+                    if (data.errors && data.errors.length > 0) {
+                        console.warn('Ошибки при обработке:');
+                        data.errors.forEach(error => console.warn(error));
+                        
+                        // Показываем первую ошибку в уведомлении
+                        showNotification('Первая ошибка: ' + data.errors[0], 'error');
+                    }
+                    
+                    // Проверяем, что данные действительно сохранились
+                    setTimeout(() => {
+                        updateTotalStudents();
+                        // Дополнительно проверяем через debug endpoint
+                        fetch('/api/debug-students/')
+                            .then(res => res.json())
+                            .then(debugData => {
+                                console.log('Студенты в БД после загрузки:', debugData);
+                            });
+                    }, 500);
+                } else {
+                    showNotification(data.error || 'Ошибка при загрузке файла', 'error');
+                }
+            })
+            .catch(error => {
+                showNotification('Ошибка: ' + error.message, 'error');
+                console.error('Upload error:', error);
+            })
+            .finally(() => {
+                closeModal('addListModal');
+                fileInput.value = ''; // Очищаем input
+            });
+        }
+        
+        // Функция очистки базы данных
+        function clearDatabase() {
+            fetch('/api/clear-database/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    showNotification(data.message, 'success');
+                } else {
+                    showNotification(data.error || 'Ошибка при очистке БД', 'error');
+                }
+            })
+            .catch(error => {
+                showNotification('Ошибка при очистке БД: ' + error.message, 'error');
+                console.error('Clear DB error:', error);
+            })
+            .finally(() => {
+                closeModal('clearDBModal');
+                updateTotalStudents(); // Обновляем счётчик
+            });
+        }
+        
+        // Функция для получения общего количества абитуриентов
+        function updateTotalStudents() {
+            fetch('/api/total-students/')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.total !== undefined) {
+                        document.getElementById('totalStudents').textContent = data.total;
+                    } else {
+                        document.getElementById('totalStudents').textContent = '0';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching total students:', error);
+                    document.getElementById('totalStudents').textContent = '?';
+                });
+        }
+        
+        // Закрытие модального окна при клике вне его
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+            }
+        }
+        
+        // Инициализация при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            updateTotalStudents();
+        });
+    </script>
+</body>
 </html>
