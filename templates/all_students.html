@@ -162,6 +162,7 @@
             padding: 20px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             page-break-inside: avoid;
+            break-inside: avoid;
         }
         
         .enrolled-title {
@@ -253,7 +254,7 @@
                         <tr><td class="row-label">Общее кол-во заявлений</td><td>{{ total_pm }}</td><td>{{ total_ivt }}</td><td>{{ total_itss }}</td><td>{{ total_ib }}</td></tr>
                         <tr><td class="row-label">Количество мест на ОП</td><td>40</td><td>50</td><td>30</td><td>20</td></tr>
                         <tr>
-                            <td class="row-label passing-score">🏆 Проходной балл (на {{ chart_dates.3 }})</td>
+                            <td class="row-label passing-score">🏆 Проходной балл</td>
                             <td class="passing-score">{% if passing_pm == "НЕДОБОР" or passing_pm == 0 %}<span class="shortage-text">НЕДОБОР</span>{% else %}{{ passing_pm }}{% endif %}</td>
                             <td class="passing-score">{% if passing_ivt == "НЕДОБОР" or passing_ivt == 0 %}<span class="shortage-text">НЕДОБОР</span>{% else %}{{ passing_ivt }}{% endif %}</td>
                             <td class="passing-score">{% if passing_itss == "НЕДОБОР" or passing_itss == 0 %}<span class="shortage-text">НЕДОБОР</span>{% else %}{{ passing_itss }}{% endif %}</td>
@@ -283,31 +284,43 @@
                     <div class="chart-box"><h3>ИБ</h3><canvas id="chart-ib"></canvas></div>
                 </div>
             </div>
-
-            <!-- Списки зачисленных -->
-            <h3 class="enlisted-section-title">📋 Списки абитуриентов, рекомендованных к зачислению</h3>
-            
             <!-- ПМ (первый – без разрыва) -->
-            <div class="enrolled-block">
-                <div class="enrolled-item">
-                    <h4 class="enrolled-title pm">ПМ ({{ enrolled_pm_count }} из 40 чел.)</h4>
-                    <div class="table-container">
-                        <table class="enrolled-table">
-                            <thead><tr><th class="pm">№</th><th class="pm">ID</th><th class="pm">Сумма баллов</th></tr></thead>
-                            <tbody>
-                                {% for student in enrolled_pm %}
-                                <tr><td>{{ forloop.counter }}</td><td>{{ student.id }}</td><td>{{ student.ball_sum }}</td></tr>
-                                {% empty %}<tr><td colspan="3" class="empty-message">Нет зачисленных</td></tr>{% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
+            <!-- Блок со списками зачисленных абитуриентов -->
+<!-- Заголовок раздела теперь внутри первого блока -->
+<div class="enrolled-block">
+    <div class="enrolled-item">
+        <h4 class="enrolled-title pm">Список к зачислению на направление ПМ ({{ enrolled_pm_count }} из 40 чел.)</h4>
+        <div class="table-container">
+            <table class="enrolled-table">
+                <thead>
+                    <tr>
+                        <th class="pm">№</th>
+                        <th class="pm">ID абитуриента</th>
+                        <th class="pm">Сумма баллов</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in enrolled_pm %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ student.id }}</td>
+                        <td>{{ student.ball_sum }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3" class="empty-message">Нет зачисленных абитуриентов</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
             
             <!-- ИВТ -->
             <div class="enrolled-block">
                 <div class="enrolled-item">
-                    <h4 class="enrolled-title ivt">ИВТ ({{ enrolled_ivt_count }} из 50 чел.)</h4>
+                    <h4 class="enrolled-title ivt">Список к зачислению на направление ИВТ ({{ enrolled_ivt_count }} из 50 чел.)</h4>
                     <div class="table-container">
                         <table class="enrolled-table">
                             <thead><tr><th class="ivt">№</th><th class="ivt">ID</th><th class="ivt">Сумма баллов</th></tr></thead>
@@ -324,7 +337,7 @@
             <!-- ИТСС -->
             <div class="enrolled-block">
                 <div class="enrolled-item">
-                    <h4 class="enrolled-title itss">ИТСС ({{ enrolled_itss_count }} из 30 чел.)</h4>
+                    <h4 class="enrolled-title itss">Список к зачислению на направление ИТСС ({{ enrolled_itss_count }} из 30 чел.)</h4>
                     <div class="table-container">
                         <table class="enrolled-table">
                             <thead><tr><th class="itss">№</th><th class="itss">ID</th><th class="itss">Сумма баллов</th></tr></thead>
@@ -341,7 +354,7 @@
             <!-- ИБ -->
             <div class="enrolled-block">
                 <div class="enrolled-item">
-                    <h4 class="enrolled-title ib">ИБ ({{ enrolled_ib_count }} из 20 чел.)</h4>
+                    <h4 class="enrolled-title ib">Список к зачислению на направление ИБ ({{ enrolled_ib_count }} из 20 чел.)</h4>
                     <div class="table-container">
                         <table class="enrolled-table">
                             <thead><tr><th class="ib">№</th><th class="ib">ID</th><th class="ib">Сумма баллов</th></tr></thead>
@@ -433,19 +446,44 @@
         function downloadPDF() {
             // Пересоздаём графики перед генерацией PDF
             createCharts();
-            
-            // Небольшая задержка, чтобы графики точно отрисовались
+        
+            // Сохраняем оригинальные стили контейнеров таблиц
+            const containers = document.querySelectorAll('#pdf-content .table-container');
+            const originalStyles = [];
+            containers.forEach(container => {
+                originalStyles.push({
+                    element: container,
+                    overflowY: container.style.overflowY,
+                    maxHeight: container.style.maxHeight
+                });
+                // Убираем ограничения, чтобы таблица была полностью видна
+                container.style.overflowY = 'visible';
+                container.style.maxHeight = 'none';
+            });
+        
+            // Небольшая задержка для применения стилей и отрисовки графиков
             setTimeout(() => {
                 const element = document.getElementById('pdf-content');
                 const opt = {
-                    margin:        [0.4, 0.4, 0.4, 0.4],
+                    margin:        [0.2, 0.2, 0.2, 0.2],
                     filename:     'svodny_otchet_po_op.pdf',
                     image:        { type: 'jpeg', quality: 0.95 },
-                    html2canvas:  { scale: 1.5, letterRendering: true, logging: false },
+                    html2canvas:  { scale: 1.2, letterRendering: true, logging: false },
                     jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' },
-                    pagebreak:    { mode: ['css', 'legacy'], before: '.enrolled-block:not(:first-of-type)' }
+                    pagebreak:    {
+                        mode: ['css', 'legacy'],
+                        before: '.enrolled-block:not(:first-of-type)',
+                        avoid: ['.enrolled-item'] // запрещаем разрывы внутри блока списка
+                    }
                 };
-                html2pdf().set(opt).from(element).save();
+        
+                html2pdf().set(opt).from(element).save().then(() => {
+                    // Восстанавливаем исходные стили контейнеров
+                    originalStyles.forEach(item => {
+                        item.element.style.overflowY = item.overflowY;
+                        item.element.style.maxHeight = item.maxHeight;
+                    });
+                });
             }, 300);
         }
 

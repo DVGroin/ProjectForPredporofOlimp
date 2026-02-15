@@ -9,6 +9,14 @@
     <!-- Подключаем Font Awesome для иконок -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
+        #studentsTable tr {
+            page-break-inside: avoid; /* для старых браузеров */
+            break-inside: avoid;      /* для современных */
+        }
+        #studentsTable td, #studentsTable th {
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
         /* Базовые стили */
         body {
             font-family: 'Segoe UI', Arial, sans-serif;
@@ -361,11 +369,11 @@
                 <div class="filters-grid">
                     <div class="filter-group">
                         <label><i class="fas fa-search"></i> Поиск по ID:</label>
-                        <input type="text" id="searchId" placeholder="Введите ID..." oninput="filterTable()">
+                        <input type="text" id="searchId" placeholder="Введите ID...">
                     </div>
                     <div class="filter-group">
                         <label><i class="fas fa-check-circle"></i> Наличие согласия:</label>
-                        <select id="agreementFilter" onchange="filterTable()">
+                        <select id="agreementFilter">
                             <option value="all">Все</option>
                             <option value="any">Есть согласие (любое)</option>
                             <option value="pm">Согласие на ПМ</option>
@@ -376,11 +384,22 @@
                     </div>
                     <div class="filter-group">
                         <label><i class="fas fa-sort-amount-down"></i> Сортировать по:</label>
-                        <select id="sortBy" onchange="filterTable()">
+                        <select id="sortBy">
                             <option value="id">ID (возрастание)</option>
                             <option value="id-desc">ID (убывание)</option>
                             <option value="sum">Сумма баллов (возраст.)</option>
                             <option value="sum-desc">Сумма баллов (убыв.)</option>
+                            
+                            <!-- Новые опции для сортировки по отдельным баллам -->
+                            <option value="rus">Русский язык (возраст.)</option>
+                            <option value="rus-desc">Русский язык (убыв.)</option>
+                            <option value="mat">Математика (возраст.)</option>
+                            <option value="mat-desc">Математика (убыв.)</option>
+                            <option value="pro">Физика/ИКТ (возраст.)</option>
+                            <option value="pro-desc">Физика/ИКТ (убыв.)</option>
+                            <option value="ind">Индивид. достижения (возраст.)</option>
+                            <option value="ind-desc">Индивид. достижения (убыв.)</option>
+                            
                             <option value="date">Дата (сначала старые)</option>
                             <option value="date-desc">Дата (сначала новые)</option>
                             <!-- Сортировка по приоритетам -->
@@ -501,55 +520,89 @@
         // Глобальные переменные
         let currentPage = 1;
         let rowsPerPage = 25;
-        let currentData = [];
-        let filteredData = [];
-
-        // Функция сбора данных из таблицы
+        let currentData = [];          // все данные из таблицы
+        let filteredData = [];         // отфильтрованные и отсортированные
+    
+        // Преобразование в число с защитой
+        function toNumber(val) {
+            if (val === undefined || val === null || val === '') return 0;
+            const num = Number(val);
+            return isNaN(num) ? 0 : num;
+        }
+    
+        // Чтение данных из таблицы (сбор существующих строк)
         function getTableData() {
             const rows = document.querySelectorAll('#tableBody tr');
             const data = [];
             rows.forEach(row => {
                 if (row.cells.length > 1 && !row.querySelector('td[colspan]')) {
-                    data.push({
-                        id: parseInt(row.dataset.id),
-                        sum: parseInt(row.dataset.sum),
-                        rus: parseInt(row.dataset.rus),
-                        mat: parseInt(row.dataset.mat),
-                        pro: parseInt(row.dataset.pro),
-                        ind: parseInt(row.dataset.ind),
-                        date: row.dataset.date,
-                        agree1: row.dataset.agree1 === 'true',
-                        agree2: row.dataset.agree2 === 'true',
-                        agree3: row.dataset.agree3 === 'true',
-                        agree4: row.dataset.agree4 === 'true',
-                        priority1: parseInt(row.dataset.priority1),
-                        priority2: parseInt(row.dataset.priority2),
-                        priority3: parseInt(row.dataset.priority3),
-                        priority4: parseInt(row.dataset.priority4),
+                    const ds = row.dataset;
+                    const student = {
+                        id: toNumber(ds.id),
+                        sum: toNumber(ds.sum),
+                        rus: toNumber(ds.rus),
+                        mat: toNumber(ds.mat),
+                        pro: toNumber(ds.pro),
+                        ind: toNumber(ds.ind),
+                        date: toNumber(ds.date),
+                        agree1: ds.agree1 === 'true',
+                        agree2: ds.agree2 === 'true',
+                        agree3: ds.agree3 === 'true',
+                        agree4: ds.agree4 === 'true',
+                        priority1: toNumber(ds.priority1),
+                        priority2: toNumber(ds.priority2),
+                        priority3: toNumber(ds.priority3),
+                        priority4: toNumber(ds.priority4),
                         element: row
-                    });
+                    };
+                    data.push(student);
                 }
             });
+            console.log('Данные загружены:', data); // для отладки
             return data;
         }
-
-        // Обновление статистики
+    
+        // Обновление статистики (согласия)
         function updateStats() {
-            const students = currentData;
-            document.getElementById('totalStudents').textContent = students.length;
-            document.getElementById('agreePm').textContent = students.filter(s => s.agree1).length;
-            document.getElementById('agreeIvt').textContent = students.filter(s => s.agree2).length;
-            document.getElementById('agreeItss').textContent = students.filter(s => s.agree3).length;
-            document.getElementById('agreeIb').textContent = students.filter(s => s.agree4).length;
+            document.getElementById('totalStudents').textContent = currentData.length;
+            document.getElementById('agreePm').textContent = currentData.filter(s => s.agree1).length;
+            document.getElementById('agreeIvt').textContent = currentData.filter(s => s.agree2).length;
+            document.getElementById('agreeItss').textContent = currentData.filter(s => s.agree3).length;
+            document.getElementById('agreeIb').textContent = currentData.filter(s => s.agree4).length;
         }
-
+    
+        // Функция сортировки
+        function applySorting() {
+            const sortBy = document.getElementById('sortBy').value; // например "sum-desc"
+            const [field, direction] = sortBy.split('-');
+            const desc = direction === 'desc';
+            console.log('Сортировка по полю:', field, 'направление:', desc ? 'убыв' : 'возр');
+    
+            filteredData.sort((a, b) => {
+                // Числовые поля
+                if (['id', 'sum', 'rus', 'mat', 'pro', 'ind', 'date', 'priority1', 'priority2', 'priority3', 'priority4'].includes(field)) {
+                    let va = a[field] === undefined ? 0 : Number(a[field]);
+                    let vb = b[field] === undefined ? 0 : Number(b[field]);
+                    return desc ? vb - va : va - vb;
+                }
+                // Булевы поля (согласия)
+                else if (field.startsWith('agree')) {
+                    // Преобразуем true/false в числа: true -> 1, false -> 0
+                    let va = a[field] ? 1 : 0;
+                    let vb = b[field] ? 1 : 0;
+                    // При desc (сначала нет) хотим 0 раньше 1 -> сортируем по возрастанию чисел
+                    // При !desc (сначала есть) хотим 1 раньше 0 -> сортируем по убыванию
+                    return desc ? va - vb : vb - va;
+                }
+                return 0;
+            });
+        }
+    
         // Фильтрация
-        function filterTable() {
+        function applyFilter() {
             const searchId = document.getElementById('searchId').value.toLowerCase();
             const agreementFilter = document.getElementById('agreementFilter').value;
-            const sortBy = document.getElementById('sortBy').value;
-
-            currentData = getTableData();
+    
             filteredData = currentData.filter(student => {
                 if (searchId && !student.id.toString().includes(searchId)) return false;
                 if (agreementFilter !== 'all') {
@@ -561,157 +614,132 @@
                 }
                 return true;
             });
-
-            applySorting(sortBy);
-            updateTableVisibility();
-            updateRecordsCount();
-            updatePaginationInfo();
-            updateStats();
+            console.log('Отфильтровано записей:', filteredData.length);
         }
-
-        // Сортировка
-        function applySorting(sortBy) {
-            const [field, direction] = sortBy.split('-');
-            const desc = direction === 'desc';
-            
-            filteredData.sort((a, b) => {
-                let valA, valB;
-                
-                // Числовые поля
-                if (field === 'id') { valA = a.id; valB = b.id; }
-                else if (field === 'sum') { valA = a.sum; valB = b.sum; }
-                else if (field === 'rus') { valA = a.rus; valB = b.rus; }
-                else if (field === 'mat') { valA = a.mat; valB = b.mat; }
-                else if (field === 'pro') { valA = a.pro; valB = b.pro; }
-                else if (field === 'ind') { valA = a.ind; valB = b.ind; }
-                else if (field === 'date') { valA = parseInt(a.date); valB = parseInt(b.date); }
-                else if (field === 'priority1') { valA = a.priority1; valB = b.priority1; }
-                else if (field === 'priority2') { valA = a.priority2; valB = b.priority2; }
-                else if (field === 'priority3') { valA = a.priority3; valB = b.priority3; }
-                else if (field === 'priority4') { valA = a.priority4; valB = b.priority4; }
-                
-                // Логические поля согласий – специальная обработка
-                else if (field === 'agree1') {
-                    if (desc) {
-                        // сначала нет (false), потом есть (true)
-                        return (a.agree1 === b.agree1) ? 0 : a.agree1 ? 1 : -1;
-                    } else {
-                        // сначала есть (true), потом нет (false)
-                        return (a.agree1 === b.agree1) ? 0 : a.agree1 ? -1 : 1;
-                    }
-                }
-                else if (field === 'agree2') {
-                    if (desc) {
-                        return (a.agree2 === b.agree2) ? 0 : a.agree2 ? 1 : -1;
-                    } else {
-                        return (a.agree2 === b.agree2) ? 0 : a.agree2 ? -1 : 1;
-                    }
-                }
-                else if (field === 'agree3') {
-                    if (desc) {
-                        return (a.agree3 === b.agree3) ? 0 : a.agree3 ? 1 : -1;
-                    } else {
-                        return (a.agree3 === b.agree3) ? 0 : a.agree3 ? -1 : 1;
-                    }
-                }
-                else if (field === 'agree4') {
-                    if (desc) {
-                        return (a.agree4 === b.agree4) ? 0 : a.agree4 ? 1 : -1;
-                    } else {
-                        return (a.agree4 === b.agree4) ? 0 : a.agree4 ? -1 : 1;
-                    }
-                }
-                else {
-                    return 0;
-                }
-
-                // Для числовых полей используем обычное сравнение
-                if (desc) return valB - valA;
-                else return valA - valB;
-            });
-        }
-
-        // Обновление видимости строк
-        function updateTableVisibility() {
-            currentData.forEach(s => s.element.style.display = 'none');
+    
+        // Перестроение таблицы с учётом пагинации и порядка
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            // Очищаем tbody
+            tbody.innerHTML = '';
+    
+            // Определяем страницу
             const start = (currentPage - 1) * rowsPerPage;
             const end = start + rowsPerPage;
             const pageData = filteredData.slice(start, end);
-            pageData.forEach(s => s.element.style.display = '');
-            updatePaginationButtons();
-        }
-
-        // Пагинация
-        function updatePaginationInfo() {
+    
+            // Вставляем строки в отсортированном порядке
+            pageData.forEach(student => {
+                tbody.appendChild(student.element);
+            });
+    
+            // Обновляем информацию о пагинации
             const totalPages = Math.ceil(filteredData.length / rowsPerPage);
             document.getElementById('totalPages').textContent = totalPages || 1;
             document.getElementById('pageInfo').innerHTML = `Страница ${currentPage} из <span id="totalPages">${totalPages || 1}</span>`;
-        }
-
-        function updatePaginationButtons() {
-            const totalPages = Math.ceil(filteredData.length / rowsPerPage);
             document.getElementById('prevPage').disabled = currentPage === 1;
             document.getElementById('nextPage').disabled = currentPage === totalPages || totalPages === 0;
+    
+            document.getElementById('recordsCount').textContent = `Показано записей: ${filteredData.length} из ${currentData.length}`;
         }
-
-        function changePage(direction) {
-            const totalPages = Math.ceil(filteredData.length / rowsPerPage);
-            if (direction === 'prev' && currentPage > 1) currentPage--;
-            if (direction === 'next' && currentPage < totalPages) currentPage++;
-            updateTableVisibility();
-            updatePaginationInfo();
+    
+        // Основная функция: фильтрация + сортировка + отрисовка
+        function refreshTable() {
+            applyFilter();       // сначала фильтруем
+            applySorting();      // потом сортируем отфильтрованные
+            currentPage = 1;     // сбрасываем на первую страницу
+            renderTable();       // перестраиваем таблицу
         }
-
+    
+        // Обработчики событий (убедитесь, что в HTML убраны атрибуты oninput/onchange)
+        document.getElementById('searchId').addEventListener('input', refreshTable);
+        document.getElementById('agreementFilter').addEventListener('change', refreshTable);
+        document.getElementById('sortBy').addEventListener('change', refreshTable);
+    
         // Сортировка по клику на заголовок
         function sortTable(column) {
-            const sortSelect = document.getElementById('sortBy');
-            const currentValue = sortSelect.value;
-            
-            if (currentValue === column) {
-                sortSelect.value = column + '-desc';
-            } else if (currentValue === column + '-desc') {
-                sortSelect.value = column;
+            const select = document.getElementById('sortBy');
+            const current = select.value;
+            if (current === column) {
+                select.value = column + '-desc';
+            } else if (current === column + '-desc') {
+                select.value = column;
             } else {
-                sortSelect.value = column;
+                select.value = column;
             }
-            filterTable();
+            refreshTable(); // после изменения селекта обновляем таблицу
         }
-
+    
         // Сброс фильтров
         function resetFilters() {
             document.getElementById('searchId').value = '';
             document.getElementById('agreementFilter').value = 'all';
             document.getElementById('sortBy').value = 'id';
-            currentPage = 1;
-            filterTable();
+            refreshTable();
         }
-
-        // Обновление счётчика записей
-        function updateRecordsCount() {
-            document.getElementById('recordsCount').textContent = `Показано записей: ${filteredData.length} из ${currentData.length}`;
+    
+        // Пагинация
+        function changePage(direction) {
+            const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+            if (direction === 'prev' && currentPage > 1) currentPage--;
+            if (direction === 'next' && currentPage < totalPages) currentPage++;
+            renderTable(); // просто перерисовываем текущую страницу (данные уже отсортированы)
         }
-
-        // PDF
+    
         function downloadPDF() {
-            const element = document.getElementById('pdf-content');
+            // Сохраняем текущие параметры
+            const originalRowsPerPage = rowsPerPage;
+            const originalPage = currentPage;
+            const originalContainerStyle = document.querySelector('.table-container').style.overflowY;
+            const originalPadding = document.getElementById('pdf-content').style.padding;
+        
+            // Показываем все строки
+            rowsPerPage = 10000;
+            currentPage = 1;
+            renderTable();
+        
+            // Убираем ограничения высоты и скролл
+            const container = document.querySelector('.table-container');
+            container.style.overflowY = 'visible';
+            container.style.maxHeight = 'none';
+        
+            // Убираем внутренние отступы контейнера PDF
+            const pdfContent = document.getElementById('pdf-content');
+            pdfContent.style.padding = '0';
+        
+            // Настройки генерации PDF
             const opt = {
-                margin: [0.4, 0.4, 0.4, 0.4],
+                margin: [0.1, 0.1, 0.1, 0.1],        // минимальные отступы
                 filename: 'obsche_spisok.pdf',
                 image: { type: 'jpeg', quality: 0.95 },
-                html2canvas: { scale: 1.5, letterRendering: true },
-                jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
+                html2canvas: {
+                    scale: 1.2,                       // уменьшенный масштаб (было 1.5)
+                    letterRendering: true,
+                    logging: false,
+                    allowTaint: false,
+                    useCORS: true
+                },
+                jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' },
+                pagebreak: { mode: 'css' }             // разрешаем разрывы страниц по CSS
             };
-            html2pdf().set(opt).from(element).save();
+        
+            // Генерируем PDF и после завершения восстанавливаем исходное состояние
+            html2pdf().set(opt).from(pdfContent).save().then(() => {
+                rowsPerPage = originalRowsPerPage;
+                currentPage = originalPage;
+                container.style.overflowY = originalContainerStyle;
+                container.style.maxHeight = '500px';
+                pdfContent.style.padding = originalPadding;
+                renderTable();
+            });
         }
-
-        // Инициализация
+    
+        // Инициализация при загрузке
         document.addEventListener('DOMContentLoaded', () => {
             currentData = getTableData();
             filteredData = [...currentData];
             updateStats();
-            updateRecordsCount();
-            updatePaginationInfo();
-            filterTable();
+            refreshTable(); // применяем начальную сортировку (по умолчанию id)
         });
     </script>
 </body>
