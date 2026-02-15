@@ -204,10 +204,10 @@
                     <!-- Общее кол-во заявлений -->
                     <tr>
                         <td class="row-label">Общее кол-во заявлений</td>
-                        <td>156</td>
-                        <td>203</td>
-                        <td>98</td>
-                        <td>145</td>
+                        <td>{{total_pm}}</td>
+                        <td>{{total_ivt}}</td>
+                        <td>{{total_itss}}</td>
+                        <td>{{total_ib}}</td>
                     </tr>
                     <!-- Количество мест на ОП -->
                     <tr>
@@ -231,31 +231,31 @@
                     </tr>
                     <tr>
                         <td class="row-label">Кол-во заявлений 1-го приоритета</td>
-                        <td>45</td>
-                        <td>60</td>
-                        <td>25</td>
-                        <td>40</td>
+                        <td>{{priority1_pm}}</td>
+                        <td>{{priority1_ivt}}</td>
+                        <td>{{priority1_itss}}</td>
+                        <td>{{priority1_ib}}</td>
                     </tr>
                     <tr>
                         <td class="row-label">Кол-во заявлений 2-го приоритета</td>
-                        <td>40</td>
-                        <td>55</td>
-                        <td>30</td>
-                        <td>35</td>
+                        <td>{{priority2_pm}}</td>
+                        <td>{{priority2_ivt}}</td>
+                        <td>{{priority2_itss}}</td>
+                        <td>{{priority2_ib}}</td>
                     </tr>
                     <tr>
                         <td class="row-label">Кол-во заявлений 3-го приоритета</td>
-                        <td>35</td>
-                        <td>50</td>
-                        <td>25</td>
-                        <td>30</td>
+                        <td>{{priority3_pm}}</td>
+                        <td>{{priority3_ivt}}</td>
+                        <td>{{priority3_itss}}</td>
+                        <td>{{priority3_ib}}</td>
                     </tr>
                     <tr>
                         <td class="row-label">Кол-во заявлений 4-го приоритета</td>
-                        <td>36</td>
-                        <td>38</td>
-                        <td>18</td>
-                        <td>40</td>
+                        <td>{{priority4_pm}}</td>
+                        <td>{{priority4_ivt}}</td>
+                        <td>{{priority4_itss}}</td>
+                        <td>{{priority4_ib}}</td>
                     </tr>
                     <!-- Блок зачисленных по приоритетам -->
                     <tr class="group-title">
@@ -263,31 +263,31 @@
                     </tr>
                     <tr>
                         <td class="row-label">Кол-во зачисленных 1-го приоритета</td>
-                        <td>25</td>
-                        <td>30</td>
-                        <td>15</td>
-                        <td>12</td>
+                        <td>{{ enrolled1_pm }}</td>
+                        <td>{{ enrolled1_ivt }}</td>
+                        <td>{{ enrolled1_itss }}</td>
+                        <td>{{ enrolled1_ib }}</td>
                     </tr>
                     <tr>
                         <td class="row-label">Кол-во зачисленных 2-го приоритета</td>
-                        <td>10</td>
-                        <td>12</td>
-                        <td>8</td>
-                        <td>5</td>
+                        <td>{{ enrolled2_pm }}</td>
+                        <td>{{ enrolled2_ivt }}</td>
+                        <td>{{ enrolled2_itss }}</td>
+                        <td>{{ enrolled2_ib }}</td>
                     </tr>
                     <tr>
                         <td class="row-label">Кол-во зачисленных 3-го приоритета</td>
-                        <td>5</td>
-                        <td>8</td>
-                        <td>5</td>
-                        <td>3</td>
+                        <td>{{ enrolled3_pm }}</td>
+                        <td>{{ enrolled3_ivt }}</td>
+                        <td>{{ enrolled3_itss }}</td>
+                        <td>{{ enrolled3_ib }}</td>
                     </tr>
                     <tr>
                         <td class="row-label">Кол-во зачисленных 4-го приоритета</td>
-                        <td>0</td>
-                        <td>0</td>
-                        <td>2</td>
-                        <td>0</td>
+                        <td>{{ enrolled4_pm }}</td>
+                        <td>{{ enrolled4_ivt }}</td>
+                        <td>{{ enrolled4_itss }}</td>
+                        <td>{{ enrolled4_ib }}</td>
                     </tr>
                 </tbody>
             </table>
@@ -344,25 +344,262 @@
         }
 
         // Функция для генерации данных динамики за 4 дня
-        function generateDynamicsData() {
-            const dates = [];
-            const today = moment(reportCreationTime);
-            
-            // Генерируем даты за последние 4 дня
-            for (let i = 3; i >= 0; i--) {
-                dates.push(today.clone().subtract(i, 'days').format('DD.MM'));
-            }
-            
-            // Данные для каждого направления (имитация динамики)
-            const data = {
-                pm: [185, 192, 188, 195],    // ПМ
-                ivt: [170, 175, 182, 178],   // ИВТ
-                itss: [155, 160, 158, 165],  // ИТСС
-                ib: [190, 185, 193, 188]     // ИБ
-            };
-            
-            return { dates, data };
+function generateDynamicsData() {
+    // Получаем даты из Django (уже в правильном формате)
+    let dates;
+    try {
+        dates = '{{ chart_dates|safe }}';
+        // Если dates строка, парсим её
+        if (typeof dates === 'string') {
+            dates = JSON.parse(dates);
         }
+    } catch (e) {
+        // Если что-то пошло не так, используем даты по умолчанию
+        console.error('Error parsing dates:', e);
+        dates = [];
+        const today = moment(reportCreationTime);
+        for (let i = 3; i >= 0; i--) {
+            dates.push(today.clone().subtract(i, 'days').format('DD.MM'));
+        }
+    }
+    
+    // Получаем данные динамики из Django
+    let pmData, ivtData, itssData, ibData;
+    try {
+        pmData = '{{ dynamics_pm|safe }}';
+        ivtData = '{{ dynamics_ivt|safe }}';
+        itssData = '{{ dynamics_itss|safe }}';
+        ibData = '{{ dynamics_ib|safe }}';
+        
+        // Парсим если это строки
+        if (typeof pmData === 'string') pmData = JSON.parse(pmData);
+        if (typeof ivtData === 'string') ivtData = JSON.parse(ivtData);
+        if (typeof itssData === 'string') itssData = JSON.parse(itssData);
+        if (typeof ibData === 'string') ibData = JSON.parse(ibData);
+    } catch (e) {
+        console.error('Error parsing dynamics data:', e);
+        // Данные по умолчанию, если не удалось получить из Django
+        /*pmData = [185, 192, 188, 195];
+        ivtData = [170, 175, 182, 178];
+        itssData = [155, 160, 158, 165];
+        ibData = [190, 185, 193, 188];*/
+    }
+    
+    // Убеждаемся, что у нас есть данные
+    if (!dates || dates.length === 0) {
+        const today = moment(reportCreationTime);
+        for (let i = 3; i >= 0; i--) {
+            dates.push(today.clone().subtract(i, 'days').format('DD.MM'));
+        }
+    }
+    
+    // Данные для каждого направления
+    const data = {
+        pm: pmData,
+        ivt: ivtData,
+        itss: itssData,
+        ib: ibData
+    };
+    
+    console.log('Dates:', dates); // Для отладки
+    console.log('Data:', data);   // Для отладки
+    
+    return { dates, data };
+}
+
+// Обновлённая функция создания графиков с лучшей обработкой осей
+function createCharts() {
+    const { dates, data } = generateDynamicsData();
+    
+    // Проверяем, что данные корректны
+    if (!dates || !data || !Array.isArray(dates) || dates.length === 0) {
+        console.error('Invalid chart data');
+        return;
+    }
+    
+    // Настройки для графиков (оптимизированные для PDF)
+    const chartConfig = {
+        type: 'line',
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            layout: {
+                padding: {
+                    top: 10,
+                    bottom: 10,
+                    left: 5,
+                    right: 5
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    enabled: true,
+                    mode: 'index',
+                    intersect: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    min: 140,
+                    max: 210,
+                    grid: {
+                        display: true,
+                        color: 'rgba(0,0,0,0.1)'
+                    },
+                    title: {
+                        display: false
+                    },
+                    ticks: {
+                        font: {
+                            size: 9
+                        },
+                        stepSize: 10,
+                        callback: function(value) {
+                            return value;
+                        }
+                    }
+                },
+                x: {
+                    type: 'category',
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        font: {
+                            size: 9
+                        },
+                        maxRotation: 30,
+                        minRotation: 30,
+                        autoSkip: true,
+                        maxTicksLimit: 4
+                    },
+                    title: {
+                        display: true,
+                        text: 'Дата',
+                        font: {
+                            size: 8
+                        }
+                    }
+                }
+            },
+            elements: {
+                line: {
+                    borderWidth: 2,
+                    fill: false
+                },
+                point: {
+                    radius: 3,
+                    hoverRadius: 4,
+                    borderWidth: 1
+                }
+            },
+            animation: {
+                duration: 0 // Отключаем анимацию для PDF
+            },
+            hover: {
+                mode: 'nearest',
+                intersect: true
+            }
+        }
+    };
+    
+    // Уничтожаем старые графики, если они существуют
+    Object.values(charts).forEach(chart => {
+        if (chart) {
+            try {
+                chart.destroy();
+            } catch (e) {
+                console.error('Error destroying chart:', e);
+            }
+        }
+    });
+    
+    // Очищаем объект charts
+    charts = {};
+    
+    // Вспомогательная функция для создания графика с проверкой данных
+    function createChartIfDataExists(elementId, label, dataArray, color) {
+        const canvas = document.getElementById(elementId);
+        if (!canvas) {
+            console.error(`Canvas element ${elementId} not found`);
+            return null;
+        }
+        
+        // Проверяем, что данные - массив и имеют правильную длину
+        let chartData = dataArray;
+        if (!Array.isArray(chartData) || chartData.length === 0) {
+            console.warn(`Invalid data for ${elementId}, using defaults`);
+            chartData = [150, 160, 170, 180]; // Запасные данные
+        }
+        
+        // Если длина массива не 4, корректируем
+        if (chartData.length !== 4) {
+            console.warn(`Data length for ${elementId} is ${chartData.length}, adjusting`);
+            const paddedData = [...chartData];
+            while (paddedData.length < 4) paddedData.push(paddedData[paddedData.length - 1] || 150);
+            chartData = paddedData.slice(0, 4);
+        }
+        
+        try {
+            return new Chart(canvas, {
+                ...chartConfig,
+                data: {
+                    labels: dates,
+                    datasets: [{
+                        label: label,
+                        data: chartData,
+                        borderColor: color,
+                        backgroundColor: color.replace(')', ', 0.1)').replace('rgb', 'rgba'),
+                        borderWidth: 2,
+                        tension: 0.2,
+                        pointBackgroundColor: color,
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 1,
+                        pointRadius: 3,
+                        pointHoverRadius: 5
+                    }]
+                }
+            });
+        } catch (e) {
+            console.error(`Error creating chart for ${elementId}:`, e);
+            return null;
+        }
+    }
+    
+    // Создаём графики с проверкой
+    charts.pm = createChartIfDataExists('chart-pm', 'ПМ', data.pm, '#4CAF50');
+    charts.ivt = createChartIfDataExists('chart-ivt', 'ИВТ', data.ivt, '#2196F3');
+    charts.itss = createChartIfDataExists('chart-itss', 'ИТСС', data.itss, '#FF9800');
+    charts.ib = createChartIfDataExists('chart-ib', 'ИБ', data.ib, '#f44336');
+    
+    console.log('Charts created:', charts); // Для отладки
+}
+
+// Добавим функцию для принудительного обновления графиков
+function refreshCharts() {
+    // Небольшая задержка, чтобы убедиться, что DOM полностью загружен
+    setTimeout(() => {
+        createCharts();
+    }, 100);
+}
+
+// Обновляем инициализацию
+document.addEventListener('DOMContentLoaded', function() {
+    // Отображаем фиксированную дату и время создания
+    displayReportDateTime();
+    
+    // Создаём графики с небольшой задержкой
+    refreshCharts();
+    
+    // Добавляем обработчик изменения размера окна для перерисовки графиков
+    window.addEventListener('resize', function() {
+        refreshCharts();
+    });
+});
 
         // Функция для создания/обновления графиков
         function createCharts() {

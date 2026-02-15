@@ -34,3 +34,7 @@ class Student(models.Model):
     priority3 = models.IntegerField(default=0)
     priority4 = models.IntegerField(default=0)
     date = models.DateField()
+
+class EnterBall(models.Model):
+    date=models.DateField()
+    enterBall=models.IntegerField()

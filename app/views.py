@@ -4,6 +4,8 @@ from .models import Student
 from django.utils import timezone
 import json
 from datetime import date
+from django.db.models import Count, Q, Max
+from datetime import date, timedelta
 # Create your views here.
 def index_view(request):
     return render(request, "index.html")
@@ -79,12 +81,273 @@ def test_view(request):
     return render(request, "index.html")
 
 def all_students_view(request: HttpRequest):
-    everything = Student.objects.all()
-    obsch_kz = 0
-    #for i in everything:
-    #    if i
-    context = {"students":everything}
+    students = Student.objects.all()
+    #print(sorted(students, key=lambda student: student.ball_sum))
+    context = {"students":students}
+    priority1_pm: int   = len(students.filter(priority1 = 1))
+    priority2_pm: int   = len(students.filter(priority1 = 2))
+    priority3_pm: int   = len(students.filter(priority1 = 3))
+    priority4_pm: int   = len(students.filter(priority1 = 4))
+    priority1_ivt: int  = len(students.filter(priority2 = 1))
+    priority2_ivt: int  = len(students.filter(priority2 = 2))
+    priority3_ivt: int  = len(students.filter(priority2 = 3))
+    priority4_ivt: int  = len(students.filter(priority2 = 4))
+    priority1_itss: int = len(students.filter(priority3 = 1))
+    priority2_itss: int = len(students.filter(priority3 = 2))
+    priority3_itss: int = len(students.filter(priority3 = 3))
+    priority4_itss: int = len(students.filter(priority3 = 4))
+    priority1_ib: int   = len(students.filter(priority4 = 1))
+    priority2_ib: int   = len(students.filter(priority4 = 1))
+    priority3_ib: int   = len(students.filter(priority4 = 1))
+    priority4_ib: int   = len(students.filter(priority4 = 1))
+    context['priority1_pm'] = priority1_pm
+    context['priority2_pm'] = priority2_pm
+    context['priority3_pm'] = priority3_pm
+    context['priority4_pm'] = priority4_pm
+    context['priority1_ivt'] = priority1_ivt
+    context['priority2_ivt'] = priority2_ivt
+    context['priority3_ivt'] = priority3_ivt
+    context['priority4_ivt'] = priority4_ivt
+    context['priority1_itss'] = priority1_itss
+    context['priority2_itss'] = priority2_itss
+    context['priority3_itss'] = priority3_itss
+    context['priority4_itss'] = priority4_itss
+    context['priority1_ib'] = priority1_ib
+    context['priority2_ib'] = priority2_ib
+    context['priority3_ib'] = priority3_ib
+    context['priority4_ib'] = priority4_ib
+    
     return render(request, "all_students.html", context=context)
+
+def all_students_report(request):
+    students = Student.objects.all()
+    context=dict()
+    priority1_pm: int   = len(students.filter(priority1 = 1))
+    priority2_pm: int   = len(students.filter(priority1 = 2))
+    priority3_pm: int   = len(students.filter(priority1 = 3))
+    priority4_pm: int   = len(students.filter(priority1 = 4))
+    priority1_ivt: int  = len(students.filter(priority2 = 1))
+    priority2_ivt: int  = len(students.filter(priority2 = 2))
+    priority3_ivt: int  = len(students.filter(priority2 = 3))
+    priority4_ivt: int  = len(students.filter(priority2 = 4))
+    priority1_itss: int = len(students.filter(priority3 = 1))
+    priority2_itss: int = len(students.filter(priority3 = 2))
+    priority3_itss: int = len(students.filter(priority3 = 3))
+    priority4_itss: int = len(students.filter(priority3 = 4))
+    priority1_ib: int   = len(students.filter(priority4 = 1))
+    priority2_ib: int   = len(students.filter(priority4 = 1))
+    priority3_ib: int   = len(students.filter(priority4 = 1))
+    priority4_ib: int   = len(students.filter(priority4 = 1))
+    context['priority1_pm'] = priority1_pm
+    context['priority2_pm'] = priority2_pm
+    context['priority3_pm'] = priority3_pm
+    context['priority4_pm'] = priority4_pm
+    context['priority1_ivt'] = priority1_ivt
+    context['priority2_ivt'] = priority2_ivt
+    context['priority3_ivt'] = priority3_ivt
+    context['priority4_ivt'] = priority4_ivt
+    context['priority1_itss'] = priority1_itss
+    context['priority2_itss'] = priority2_itss
+    context['priority3_itss'] = priority3_itss
+    context['priority4_itss'] = priority4_itss
+    context['priority1_ib'] = priority1_ib
+    context['priority2_ib'] = priority2_ib
+    context['priority3_ib'] = priority3_ib
+    context['priority4_ib'] = priority4_ib
+    """
+    Функция для формирования сводного отчёта приёмной комиссии
+    """
+    # Получаем всех абитуриентов, которые согласны на зачисление
+    # (хотя бы одно согласие)
+    students = Student.objects.filter(
+        Q(agreement1=True) | Q(agreement2=True) | 
+        Q(agreement3=True) | Q(agreement4=True)
+    )
+    
+    # Коды направлений: ПМ - 1, ИВТ - 2, ИТСС - 3, ИБ - 4
+    DIRECTIONS = {
+        1: 'ПМ',
+        2: 'ИВТ', 
+        3: 'ИТСС',
+        4: 'ИБ'
+    }
+    
+    # 1. Общее количество заявлений по направлениям
+    total_by_direction = {}
+    for dir_code in DIRECTIONS.keys():
+        total_by_direction[dir_code] = students.filter(
+            Q(priority1=dir_code) | Q(priority2=dir_code) | 
+            Q(priority3=dir_code) | Q(priority4=dir_code)
+        ).count()
+    
+    # 2. Количество заявлений по приоритетам
+    priority_stats = {}
+    for dir_code in DIRECTIONS.keys():
+        priority_stats[dir_code] = {
+            'priority1': students.filter(priority1=dir_code).count(),
+            'priority2': students.filter(priority2=dir_code).count(),
+            'priority3': students.filter(priority3=dir_code).count(),
+            'priority4': students.filter(priority4=dir_code).count(),
+        }
+    
+    # 3. Зачисленные студенты по приоритетам
+    enrolled_stats = {}
+    for dir_code in DIRECTIONS.keys():
+        enrolled_stats[dir_code] = {
+            'priority1': students.filter(
+                priority1=dir_code, 
+                **{f'agreement{1}': True}
+            ).count(),
+            'priority2': students.filter(
+                priority2=dir_code,
+                **{f'agreement{2}': True}
+            ).count(),
+            'priority3': students.filter(
+                priority3=dir_code,
+                **{f'agreement{3}': True}
+            ).count(),
+            'priority4': students.filter(
+                priority4=dir_code,
+                **{f'agreement{4}': True}
+            ).count(),
+        }
+    
+    # 4. Динамика проходного балла за последние 4 дня
+    dynamics_data = {}
+    end_date = date.today()
+    start_date = end_date - timedelta(days=3)
+    
+    for dir_code in DIRECTIONS.keys():
+        dir_dynamics = []
+        for i in range(4):
+            current_date = start_date + timedelta(days=i)
+            
+            # Получаем всех абитуриентов с согласием на это направление до текущей даты
+            candidates = Student.objects.filter(
+                Q(priority1=dir_code, agreement1=True) |
+                Q(priority2=dir_code, agreement2=True) |
+                Q(priority3=dir_code, agreement3=True) |
+                Q(priority4=dir_code, agreement4=True),
+                date__lte=current_date
+            ).order_by('-ball_sum')
+            
+            # Количество мест (можно вынести в отдельную модель)
+            places = {
+                1: 40,  # ПМ
+                2: 50,  # ИВТ
+                3: 30,  # ИТСС
+                4: 20,  # ИБ
+            }
+            
+            # Проходной балл - балл последнего зачисленного
+            if candidates.count() >= places.get(dir_code, 0):
+                passing_score = candidates[places.get(dir_code, 0) - 1].ball_sum
+            elif candidates.count() > 0:
+                passing_score = candidates.last().ball_sum
+            else:
+                passing_score = 0
+                
+            dir_dynamics.append(passing_score)
+        
+        dynamics_data[dir_code] = dir_dynamics
+    
+    # 5. Проходные баллы на сегодня
+    today_passing = {}
+    for dir_code in DIRECTIONS.keys():
+        candidates = Student.objects.filter(
+            Q(priority1=dir_code, agreement1=True) |
+            Q(priority2=dir_code, agreement2=True) |
+            Q(priority3=dir_code, agreement3=True) |
+            Q(priority4=dir_code, agreement4=True)
+        ).order_by('-ball_sum')
+        
+        places = {1: 40, 2: 50, 3: 30, 4: 20}
+        
+        if candidates.count() >= places.get(dir_code, 0):
+            today_passing[dir_code] = candidates[places.get(dir_code, 0) - 1].ball_sum
+        elif candidates.count() > 0:
+            today_passing[dir_code] = candidates.last().ball_sum
+        else:
+            today_passing[dir_code] = 0
+    
+    # Подготавливаем данные для шаблона
+    context = {
+        # Общее количество заявлений
+        'total_pm': total_by_direction.get(1, 0),
+        'total_ivt': total_by_direction.get(2, 0),
+        'total_itss': total_by_direction.get(3, 0),
+        'total_ib': total_by_direction.get(4, 0),
+        
+        # Количество мест
+        'places_pm': 40,
+        'places_ivt': 50,
+        'places_itss': 30,
+        'places_ib': 20,
+        
+        # Проходные баллы на сегодня
+        'passing_pm': today_passing.get(1, 0),
+        'passing_ivt': today_passing.get(2, 0),
+        'passing_itss': today_passing.get(3, 0),
+        'passing_ib': today_passing.get(4, 0),
+        
+        # Заявления по приоритетам
+        'priority1_pm': priority1_pm,
+        'priority2_pm': priority2_pm,
+        'priority3_pm': priority3_pm,
+        'priority4_pm': priority4_pm,
+        
+        'priority1_ivt': priority1_ivt,
+        'priority2_ivt': priority2_ivt,
+        'priority3_ivt': priority3_ivt,
+        'priority4_ivt': priority4_ivt,
+        
+        'priority1_itss': priority1_itss,
+        'priority2_itss': priority2_itss,
+        'priority3_itss': priority3_itss,
+        'priority4_itss': priority4_itss,
+        
+        'priority1_ib': priority1_ib,
+        'priority2_ib': priority2_ib,
+        'priority3_ib': priority3_ib,
+        'priority4_ib': priority4_ib,
+        
+        # Зачисленные по приоритетам
+        'enrolled1_pm': enrolled_stats.get(1, {}).get('priority1', 0),
+        'enrolled2_pm': enrolled_stats.get(1, {}).get('priority2', 0),
+        'enrolled3_pm': enrolled_stats.get(1, {}).get('priority3', 0),
+        'enrolled4_pm': enrolled_stats.get(1, {}).get('priority4', 0),
+        
+        'enrolled1_ivt': enrolled_stats.get(2, {}).get('priority1', 0),
+        'enrolled2_ivt': enrolled_stats.get(2, {}).get('priority2', 0),
+        'enrolled3_ivt': enrolled_stats.get(2, {}).get('priority3', 0),
+        'enrolled4_ivt': enrolled_stats.get(2, {}).get('priority4', 0),
+        
+        'enrolled1_itss': enrolled_stats.get(3, {}).get('priority1', 0),
+        'enrolled2_itss': enrolled_stats.get(3, {}).get('priority2', 0),
+        'enrolled3_itss': enrolled_stats.get(3, {}).get('priority3', 0),
+        'enrolled4_itss': enrolled_stats.get(3, {}).get('priority4', 0),
+        
+        'enrolled1_ib': enrolled_stats.get(4, {}).get('priority1', 0),
+        'enrolled2_ib': enrolled_stats.get(4, {}).get('priority2', 0),
+        'enrolled3_ib': enrolled_stats.get(4, {}).get('priority3', 0),
+        'enrolled4_ib': enrolled_stats.get(4, {}).get('priority4', 0),
+        
+        # Данные для графиков динамики (в JSON формате для JavaScript)
+        'dynamics_pm': json.dumps(dynamics_data.get(1, [0, 0, 0, 0])),
+        'dynamics_ivt': json.dumps(dynamics_data.get(2, [0, 0, 0, 0])),
+        'dynamics_itss': json.dumps(dynamics_data.get(3, [0, 0, 0, 0])),
+        'dynamics_ib': json.dumps(dynamics_data.get(4, [0, 0, 0, 0])),
+        
+        # Даты для графиков
+        'chart_dates': json.dumps([
+            (date.today() - timedelta(days=3)).strftime('%d.%m'),
+            (date.today() - timedelta(days=2)).strftime('%d.%m'),
+            (date.today() - timedelta(days=1)).strftime('%d.%m'),
+            date.today().strftime('%d.%m'),
+        ]),
+    }
+    
+    return render(request, 'all_students.html', context)
 
 def rep_all_view(request: HttpRequest):
     students = Student.objects.all()
