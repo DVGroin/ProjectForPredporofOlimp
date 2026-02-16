@@ -5,6 +5,7 @@ import os
 from datetime import datetime
 from typing import List, Dict, Set, Tuple
 from dataclasses import dataclass, asdict
+
 @dataclass
 class ApplicantRecord:
     id: int
@@ -17,6 +18,7 @@ class ApplicantRecord:
     total_score: int
     program_id: str
     date: str
+
 class TestDataGenerator:
     def __init__(self):
         self.programs = ['ПМ', 'ИВТ', 'ИТСС', 'ИБ']
@@ -80,6 +82,7 @@ class TestDataGenerator:
             'individual': (0, 10)
         }
         self.last_id = 1
+
     def generate_scores(self) -> dict:
         physics = random.randint(*self.score_ranges['physics'])
         russian = random.randint(*self.score_ranges['russian'])
@@ -93,10 +96,12 @@ class TestDataGenerator:
             'individual': individual,
             'total': total
         }
+
     def generate_priority(self, num_programs: int) -> List[int]:
         priorities = list(range(1, num_programs + 1))
         random.shuffle(priorities)
         return priorities
+
     def _generate_intersections(self, date: str, records: List[ApplicantRecord]):
         count_4 = self.intersections_3_4[date][('ПМ', 'ИВТ', 'ИТСС', 'ИБ')]
         for _ in range(count_4):
@@ -117,6 +122,7 @@ class TestDataGenerator:
                     program_id=program,
                     date=date
                 ))
+
         triples = [
             ('ПМ', 'ИВТ', 'ИТСС'),
             ('ПМ', 'ИВТ', 'ИБ'),
@@ -143,6 +149,7 @@ class TestDataGenerator:
                         program_id=program,
                         date=date
                     ))
+
         for pair, count in self.intersections_2[date].items():
             for _ in range(count):
                 applicant_id = self.last_id
@@ -162,6 +169,7 @@ class TestDataGenerator:
                         program_id=program,
                         date=date
                     ))
+
     def _fill_remaining(self, date: str, records: List[ApplicantRecord]):
         current_counts = {prog: 0 for prog in self.programs}
         for record in records:
@@ -185,11 +193,13 @@ class TestDataGenerator:
                     program_id=program,
                     date=date
                 ))
+
     def generate_date_data(self, date: str) -> List[ApplicantRecord]:
         records = []
         self._generate_intersections(date, records)
         self._fill_remaining(date, records)
         return records
+
     def setup_consent(self, all_records: List[ApplicantRecord]):
         for date in self.dates:
             date_records = [r for r in all_records if r.date == date]
@@ -214,6 +224,7 @@ class TestDataGenerator:
                                 consent_count += 1
                                 if consent_count > places:
                                     break
+
     def save_to_csv(self, records: List[ApplicantRecord], filename: str):
         if not records:
             return
@@ -236,7 +247,8 @@ class TestDataGenerator:
                     'Балл за индивидуальные достижения': record.individual_score,
                     'Сумма баллов': record.total_score
                 })
-    def generate_all_files(self, output_dir: str = './test_data'):
+
+    def generate_all_files(self, output_dir: str = './competitive_lists'):
         os.makedirs(output_dir, exist_ok=True)
         all_records = []
         print("ГЕНЕРАЦИЯ ТЕСТОВЫХ ДАННЫХ")
@@ -274,6 +286,7 @@ class TestDataGenerator:
             json.dump(json_data, f, ensure_ascii=False, indent=2)
         print(f"{json_file}")
         return all_records
+
     def validate_data(self, all_records: List[ApplicantRecord]):
         print("\n" + "=" * 60)
         print("ВАЛИДАЦИЯ ДАННЫХ")
@@ -316,6 +329,7 @@ class TestDataGenerator:
                 print(f"{program}: {consent_count} согласий > {places} мест")
             else:
                 print(f"{program}: {consent_count} согласий <= {places} мест")
+
     def _check_intersections(self, all_records: List[ApplicantRecord], date: str):
         date_records = [r for r in all_records if r.date == date]
         applicants = {}
@@ -353,6 +367,7 @@ class TestDataGenerator:
             print(f"ПМ-ИВТ-ИТСС-ИБ: {count}")
         else:
             print(f"ПМ-ИВТ-ИТСС-ИБ: {count} (ожидалось {expected})")
+
 def main():
     generator = TestDataGenerator()
     records = generator.generate_all_files('./competitive_lists')
@@ -364,6 +379,7 @@ def main():
     print("  - ДД.ММ_all.csv    - общие файлы по дням")
     print("  - all_days_all_programs.csv - полные данные")
     print("  - all_data.json    - данные в JSON формате")
+
 if __name__ == "__main__":
     random.seed(42)
     main()
