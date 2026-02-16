@@ -24,13 +24,10 @@ class TestDataGenerator:
 
     def __init__(self):
 
-        # программы
         self.programs = ['ПМ', 'ИВТ', 'ИТСС', 'ИБ']
 
-        # даты
         self.dates = ['01.08', '02.08', '03.08', '04.08']
 
-        # количество мест
         self.places = {
             'ПМ': 40,
             'ИВТ': 50,
@@ -38,7 +35,6 @@ class TestDataGenerator:
             'ИБ': 20
         }
 
-        # фиксированное количество абитуриентов
         self.counts = {
             '01.08': {'ПМ': 60, 'ИВТ': 100, 'ИТСС': 50, 'ИБ': 70},
             '02.08': {'ПМ': 380, 'ИВТ': 370, 'ИТСС': 350, 'ИБ': 260},
@@ -46,17 +42,65 @@ class TestDataGenerator:
             '04.08': {'ПМ': 1240, 'ИВТ': 1390, 'ИТСС': 1240, 'ИБ': 1190}
         }
 
-        # диапазоны баллов
+        # пересечения
+        self.intersections_2 = {
+            '01.08': {('ПМ','ИВТ'):10, ('ПМ','ИТСС'):5, ('ПМ','ИБ'):7,
+                      ('ИВТ','ИТСС'):6, ('ИВТ','ИБ'):8, ('ИТСС','ИБ'):4},
+
+            '02.08': {('ПМ','ИВТ'):40, ('ПМ','ИТСС'):35, ('ПМ','ИБ'):30,
+                      ('ИВТ','ИТСС'):30, ('ИВТ','ИБ'):25, ('ИТСС','ИБ'):20},
+
+            '03.08': {('ПМ','ИВТ'):120, ('ПМ','ИТСС'):110, ('ПМ','ИБ'):90,
+                      ('ИВТ','ИТСС'):100, ('ИВТ','ИБ'):85, ('ИТСС','ИБ'):70},
+
+            '04.08': {('ПМ','ИВТ'):200, ('ПМ','ИТСС'):180, ('ПМ','ИБ'):170,
+                      ('ИВТ','ИТСС'):190, ('ИВТ','ИБ'):180, ('ИТСС','ИБ'):160}
+        }
+
+        self.intersections_3_4 = {
+            '01.08': {
+                ('ПМ','ИВТ','ИТСС'):3,
+                ('ПМ','ИВТ','ИБ'):3,
+                ('ИВТ','ИТСС','ИБ'):2,
+                ('ПМ','ИТСС','ИБ'):2,
+                ('ПМ','ИВТ','ИТСС','ИБ'):1
+            },
+
+            '02.08': {
+                ('ПМ','ИВТ','ИТСС'):15,
+                ('ПМ','ИВТ','ИБ'):15,
+                ('ИВТ','ИТСС','ИБ'):12,
+                ('ПМ','ИТСС','ИБ'):10,
+                ('ПМ','ИВТ','ИТСС','ИБ'):8
+            },
+
+            '03.08': {
+                ('ПМ','ИВТ','ИТСС'):50,
+                ('ПМ','ИВТ','ИБ'):45,
+                ('ИВТ','ИТСС','ИБ'):40,
+                ('ПМ','ИТСС','ИБ'):35,
+                ('ПМ','ИВТ','ИТСС','ИБ'):30
+            },
+
+            '04.08': {
+                ('ПМ','ИВТ','ИТСС'):80,
+                ('ПМ','ИВТ','ИБ'):80,
+                ('ИВТ','ИТСС','ИБ'):70,
+                ('ПМ','ИТСС','ИБ'):70,
+                ('ПМ','ИВТ','ИТСС','ИБ'):60
+            }
+        }
+
         self.score_ranges = {
-            'physics': (40, 100),
-            'russian': (40, 100),
-            'math': (40, 100),
-            'individual': (0, 10)
+            'physics': (40,100),
+            'russian': (40,100),
+            'math': (40,100),
+            'individual': (0,10)
         }
 
         self.last_id = 1
 
-    # генерация баллов
+
     def generate_scores(self):
 
         physics = random.randint(*self.score_ranges['physics'])
@@ -64,80 +108,151 @@ class TestDataGenerator:
         math = random.randint(*self.score_ranges['math'])
         individual = random.randint(*self.score_ranges['individual'])
 
-        total = physics + russian + math + individual
+        return {
+            'physics': physics,
+            'russian': russian,
+            'math': math,
+            'individual': individual,
+            'total': physics + russian + math + individual
+        }
 
-        return physics, russian, math, individual, total
 
-    # генерация данных за дату
-    def generate_date_data(self, date: str) -> List[ApplicantRecord]:
+    def generate_priority(self, n):
 
-        records = []
+        p = list(range(1, n+1))
+        random.shuffle(p)
+        return p
+
+
+    def _generate_intersections(self, date, records):
+
+        created = []
+
+        def create(programs):
+
+            applicant_id = self.last_id
+            self.last_id += 1
+
+            scores = self.generate_scores()
+            priorities = self.generate_priority(len(programs))
+
+            for i, program in enumerate(programs):
+
+                records.append(ApplicantRecord(
+                    id=applicant_id,
+                    consent=False,
+                    priority=priorities[i],
+                    physics_score=scores['physics'],
+                    russian_score=scores['russian'],
+                    math_score=scores['math'],
+                    individual_score=scores['individual'],
+                    total_score=scores['total'],
+                    program_id=program,
+                    date=date
+                ))
+
+            created.append(set(programs))
+
+
+        quad = ('ПМ','ИВТ','ИТСС','ИБ')
+
+        for _ in range(self.intersections_3_4[date][quad]):
+            create(quad)
+
+
+        triples = [
+            ('ПМ','ИВТ','ИТСС'),
+            ('ПМ','ИВТ','ИБ'),
+            ('ИВТ','ИТСС','ИБ'),
+            ('ПМ','ИТСС','ИБ')
+        ]
+
+        for triple in triples:
+
+            needed = self.intersections_3_4[date][triple]
+
+            for _ in range(needed):
+                create(triple)
+
+
+        for pair in self.intersections_2[date]:
+
+            needed = self.intersections_2[date][pair]
+
+            for _ in range(needed):
+                create(pair)
+
+
+    def _fill_remaining(self, date, records):
+
+        counts = {p:0 for p in self.programs}
+
+        for r in records:
+            if r.date == date:
+                counts[r.program_id]+=1
 
         for program in self.programs:
 
-            count = self.counts[date][program]
+            needed = self.counts[date][program] - counts[program]
 
-            for _ in range(count):
+            for _ in range(max(0, needed)):
 
-                physics, russian, math, individual, total = self.generate_scores()
+                applicant_id = self.last_id
+                self.last_id+=1
 
-                records.append(
-                    ApplicantRecord(
-                        id=self.last_id,
-                        consent=False,
-                        priority=1,
-                        physics_score=physics,
-                        russian_score=russian,
-                        math_score=math,
-                        individual_score=individual,
-                        total_score=total,
-                        program_id=program,
-                        date=date
-                    )
-                )
+                scores = self.generate_scores()
 
-                self.last_id += 1
+                records.append(ApplicantRecord(
+                    id=applicant_id,
+                    consent=False,
+                    priority=1,
+                    physics_score=scores['physics'],
+                    russian_score=scores['russian'],
+                    math_score=scores['math'],
+                    individual_score=scores['individual'],
+                    total_score=scores['total'],
+                    program_id=program,
+                    date=date
+                ))
+
+
+    def generate_date_data(self, date):
+
+        records = []
+
+        self._generate_intersections(date, records)
+
+        self._fill_remaining(date, records)
 
         return records
 
-    # установка согласий (top N по баллам)
-    def setup_consent(self, all_records):
+
+    def setup_consent(self, records):
 
         for date in self.dates:
 
-            for program in self.programs:
+            date_records = [r for r in records if r.date==date]
 
-                records = [
-                    r for r in all_records
-                    if r.date == date and r.program_id == program
-                ]
+            by_applicant = {}
 
-                records.sort(key=lambda x: x.total_score, reverse=True)
+            for r in date_records:
+                by_applicant.setdefault(r.id, []).append(r)
 
-                places = self.places[program]
+            for apps in by_applicant.values():
+                apps.sort(key=lambda x:x.priority)
+                apps[0].consent=True
 
-                for i in range(min(places, len(records))):
-                    records[i].consent = True
 
-    # сохранение CSV
     def save_to_csv(self, records, filename):
 
-        if not records:
-            return
+        records.sort(key=lambda x:(x.total_score), reverse=True)
 
-        records.sort(key=lambda x: x.total_score, reverse=True)
-
-        with open(filename, 'w', newline='', encoding='utf-8-sig') as f:
+        with open(filename,'w',newline='',encoding='utf-8-sig') as f:
 
             writer = csv.DictWriter(f, fieldnames=[
-                'ID',
-                'Согласие',
-                'Приоритет',
-                'Балл Физика/ИКТ',
-                'Балл Русский язык',
-                'Балл Математика',
-                'Балл за индивидуальные достижения',
-                'Сумма баллов'
+                'ID','Согласие','Приоритет',
+                'Балл Физика','Балл Русский',
+                'Балл Математика','ИД','Сумма'
             ])
 
             writer.writeheader()
@@ -145,114 +260,67 @@ class TestDataGenerator:
             for r in records:
 
                 writer.writerow({
-                    'ID': r.id,
-                    'Согласие': 'Да' if r.consent else 'Нет',
-                    'Приоритет': r.priority,
-                    'Балл Физика/ИКТ': r.physics_score,
-                    'Балл Русский язык': r.russian_score,
-                    'Балл Математика': r.math_score,
-                    'Балл за индивидуальные достижения': r.individual_score,
-                    'Сумма баллов': r.total_score
+                    'ID':r.id,
+                    'Согласие':'Да' if r.consent else 'Нет',
+                    'Приоритет':r.priority,
+                    'Балл Физика':r.physics_score,
+                    'Балл Русский':r.russian_score,
+                    'Балл Математика':r.math_score,
+                    'ИД':r.individual_score,
+                    'Сумма':r.total_score
                 })
 
-    # генерация всех файлов
-    def generate_all_files(self, output_dir='./competitive_lists'):
 
-        os.makedirs(output_dir, exist_ok=True)
+    def generate_all_files(self, out='./competitive_lists'):
 
-        all_records = []
+        os.makedirs(out,exist_ok=True)
 
-        print("ГЕНЕРАЦИЯ ДАННЫХ")
+        all_records=[]
 
         for date in self.dates:
 
-            print(f"\nДата {date}")
+            print("DATE",date)
 
-            records = self.generate_date_data(date)
+            rec=self.generate_date_data(date)
 
-            all_records.extend(records)
+            all_records.extend(rec)
 
             for program in self.programs:
 
-                count = len([
-                    r for r in records
-                    if r.program_id == program
-                ])
+                prog=[r for r in rec if r.program_id==program]
 
-                print(program, count)
+                print(program,len(prog))
 
-        print("\nУстановка согласий...")
+                self.save_to_csv(
+                    prog,
+                    f"{out}/{date}_{program}.csv"
+                )
+
         self.setup_consent(all_records)
 
-        print("\nСохранение файлов...")
+        self.save_to_csv(
+            all_records,
+            f"{out}/ALL.csv"
+        )
 
-        for date in self.dates:
-
-            date_records = [
-                r for r in all_records
-                if r.date == date
-            ]
-
-            for program in self.programs:
-
-                program_records = [
-                    r for r in date_records
-                    if r.program_id == program
-                ]
-
-                filename = f"{output_dir}/{date}_{program}.csv"
-
-                self.save_to_csv(program_records, filename)
-
-                print(filename)
-
-            filename = f"{output_dir}/{date}_all.csv"
-
-            self.save_to_csv(date_records, filename)
-
-            print(filename)
-
-        # общий CSV
-        filename = f"{output_dir}/all_days_all_programs.csv"
-
-        self.save_to_csv(all_records, filename)
-
-        print(filename)
-
-        # JSON
-        json_file = f"{output_dir}/all_data.json"
-
-        with open(json_file, 'w', encoding='utf-8') as f:
+        with open(f"{out}/ALL.json",'w',encoding='utf8') as f:
 
             json.dump(
-                [
-                    {
-                        **asdict(r),
-                        "consent": "Да" if r.consent else "Нет"
-                    }
-                    for r in all_records
-                ],
+                [asdict(r) for r in all_records],
                 f,
                 ensure_ascii=False,
                 indent=2
             )
 
-        print(json_file)
 
-        return all_records
-
-
-# main
 def main():
 
-    random.seed()  # каждый раз новые данные
+    random.seed()
 
-    generator = TestDataGenerator()
+    g=TestDataGenerator()
 
-    generator.generate_all_files()
-
-    print("\nГОТОВО")
+    g.generate_all_files()
 
 
-if __name__ == "__main__":
+if __name__=="__main__":
     main()
